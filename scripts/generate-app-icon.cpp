@@ -1,31 +1,83 @@
-// Render a generic application-window symbol. No character artwork is used.
+// Package the selected artwork at the sizes required by desktop platforms.
+#include <QBuffer>
 #include <QCoreApplication>
+#include <QDataStream>
 #include <QDir>
+#include <QFile>
 #include <QImage>
 #include <QPainter>
 #include <QPainterPath>
+#include <QVector>
+
+static bool writeIco(const QImage &image, const QString &path) {
+    const QVector<int> sizes{16, 24, 32, 48, 64, 128, 256};
+    QVector<QByteArray> frames;
+    for (int size : sizes) {
+        QByteArray data;
+        QBuffer buffer(&data);
+        if (!buffer.open(QIODevice::WriteOnly) ||
+            !image.scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation).save(&buffer, "PNG")) return false;
+        frames.append(data);
+    }
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) return false;
+    QDataStream stream(&file);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    stream << quint16(0) << quint16(1) << quint16(frames.size());
+    quint32 offset = 6 + quint32(frames.size()) * 16;
+    for (int i = 0; i < frames.size(); ++i) {
+        const auto dimension = quint8(sizes[i] == 256 ? 0 : sizes[i]);
+        const auto length = quint32(frames[i].size());
+        stream << dimension << dimension << quint8(0) << quint8(0)
+               << quint16(1) << quint16(32) << length << offset;
+        offset += length;
+    }
+    for (const auto &frame : frames)
+        if (stream.writeRawData(frame.constData(), frame.size()) != frame.size()) return false;
+    return stream.status() == QDataStream::Ok;
+}
 
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
-    if (argc != 3) return 2;
+    if (argc != 6) {
+        qWarning("Usage: petdesk_icon_generator artwork.png app.png app.iconset status.png app.ico");
+        return 2;
+    }
+    const QImage artwork(QString::fromLocal8Bit(argv[1]));
+    if (artwork.isNull() || artwork.width() != artwork.height()) {
+        qWarning("The source artwork must be a square image");
+        return 1;
+    }
     QImage master(1024, 1024, QImage::Format_ARGB32_Premultiplied);
     master.fill(Qt::transparent);
-    QPainter p(&master);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor("#365d47")); p.drawRoundedRect(QRectF(64, 64, 896, 896), 200, 200);
-    p.setBrush(QColor(255, 255, 255, 110)); p.drawRoundedRect(QRectF(212, 234, 520, 390), 34, 34);
-    p.setBrush(Qt::white); p.drawRoundedRect(QRectF(292, 350, 520, 390), 34, 34);
-    p.setBrush(QColor("#365d47")); p.drawRoundedRect(QRectF(330, 470, 444, 226), 16, 16);
-    p.drawEllipse(QPointF(338, 410), 10, 10); p.drawEllipse(QPointF(376, 410), 10, 10);
-    p.end();
-    if (!master.save(QString::fromLocal8Bit(argv[1]))) return 1;
-    const QDir iconset(QString::fromLocal8Bit(argv[2]));
-    QDir().mkpath(iconset.path());
+    QPainter painter(&master);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    QPainterPath tile;
+    tile.addRoundedRect(QRectF(64, 64, 896, 896), 200, 200);
+    painter.setClipPath(tile);
+    painter.drawImage(QRectF(64, 64, 896, 896), artwork);
+    painter.end();
+    if (!master.save(QString::fromLocal8Bit(argv[2]))) return 1;
+
+    const QDir iconset(QString::fromLocal8Bit(argv[3]));
+    if (!QDir().mkpath(iconset.path())) return 1;
     for (int size : {16, 32, 128, 256, 512}) for (int scale : {1, 2}) {
         const QString name = QString("icon_%1x%1%2.png").arg(size).arg(scale == 2 ? "@2x" : "");
-        if (!master.scaled(size * scale, size * scale, Qt::KeepAspectRatio, Qt::SmoothTransformation)
-                .save(iconset.filePath(name))) return 1;
+        if (!master.scaled(size * scale, size * scale, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+                 .save(iconset.filePath(name))) return 1;
     }
-    return 0;
+
+    // A closer crop of the same portrait stays recognizable in the small status area.
+    QImage status(128, 128, QImage::Format_ARGB32_Premultiplied);
+    status.fill(Qt::transparent);
+    QPainter statusPainter(&status);
+    statusPainter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    QPainterPath statusShape;
+    statusShape.addRoundedRect(QRectF(2, 2, 124, 124), 25, 25);
+    statusPainter.setClipPath(statusShape);
+    const qreal unit = artwork.width() / 1254.0;
+    statusPainter.drawImage(QRectF(2, 2, 124, 124), artwork, QRectF(255 * unit, 100 * unit, 745 * unit, 745 * unit));
+    statusPainter.end();
+    if (!status.save(QString::fromLocal8Bit(argv[4]))) return 1;
+    return writeIco(master, QString::fromLocal8Bit(argv[5])) ? 0 : 1;
 }

@@ -7,6 +7,10 @@
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     @autoreleasepool {
+        NSImage *portrait = PetDeskStatusPortrait();
+        if (!portrait || portrait.isTemplate || portrait.size.width != 18 || portrait.size.height != 18) {
+            qCritical("The bundled status portrait could not be loaded at the intended size"); return 1;
+        }
         QAction open(QStringLiteral("打开控制台")), quit(QStringLiteral("退出 PetDesk"));
         QAction pause(QStringLiteral("暂停动画")); pause.setCheckable(true); pause.setChecked(true);
         QSignalSpy opened(&open, &QAction::triggered), exited(&quit, &QAction::triggered);

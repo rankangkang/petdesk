@@ -15,8 +15,9 @@ struct StatusEntry::Impl {
         menu.addAction(open); menu.setDefaultAction(open);
         menu.addAction(importPet); menu.addSeparator();
         menu.addAction(visibility); menu.addAction(pause); menu.addSeparator(); menu.addAction(quit);
-        tray.setIcon(QApplication::windowIcon().isNull()
-            ? QApplication::style()->standardIcon(QStyle::SP_DesktopIcon) : QApplication::windowIcon());
+        const QIcon statusIcon(QStringLiteral(":/assets/PetDesk-status.png"));
+        tray.setIcon(!statusIcon.isNull() ? statusIcon : (QApplication::windowIcon().isNull()
+            ? QApplication::style()->standardIcon(QStyle::SP_DesktopIcon) : QApplication::windowIcon()));
         tray.setToolTip(QStringLiteral("PetDesk")); tray.setContextMenu(&menu);
         QObject::connect(&tray, &QSystemTrayIcon::activated, &tray, [open](QSystemTrayIcon::ActivationReason reason) {
             if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) open->trigger();

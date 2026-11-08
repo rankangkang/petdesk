@@ -75,10 +75,16 @@ bash scripts/package-macos.sh
 
 脚本使用 CMake 当前配置的 Qt SDK，输出 `dist/PetDesk.app`，并限制插件只从包内加载。当前构建为 macOS 14+、Apple Silicon；Windows、Linux 和 Intel Mac 尚未实测，Wayland 的窗口定位也需要平台验证。
 
-通用应用图标由仓库中的 QPainter 代码生成，未绑定任何角色素材。需要重建图标时使用 `petdesk_icon_generator` CMake 目标与 macOS `iconutil`；运行应用不需要生成工具。
+应用图标使用胡桃形象，菜单栏及通知区域使用同一形象的头像；这不会预置或限制可导入的桌宠。原始图稿和各平台图标保存在 `assets`。需要重新打包图标时：
+
+```sh
+cmake --build build --target petdesk_icon_generator
+build/petdesk_icon_generator assets/PetDesk-artwork.png assets/PetDesk.png build/PetDesk.iconset assets/PetDesk-status.png assets/PetDesk.ico
+iconutil -c icns build/PetDesk.iconset -o assets/PetDesk.icns
+```
 
 ## 验证与范围
 
-导入、动作、窗口生命周期和配置测试覆盖空库入口、多宠物独立设置、旧配置迁移、移出恢复、重复导入、再次打开控制台，以及原有动画与注视契约。状态入口及 Mac 验证见 `qa/verification-0.4.3.json`；此前版本的验证记录见 `qa/verification-0.4.2.json`、`qa/verification-0.4.1.json`、`qa/verification-0.4.0.json` 和 `qa/verification.json`。
+导入、动作、窗口生命周期和配置测试覆盖空库入口、多宠物独立设置、旧配置迁移、移出恢复、重复导入、再次打开控制台，以及原有动画与注视契约。图标和 Mac 验证见 `qa/verification-0.4.4.json`；此前版本的验证记录见 `qa/verification-0.4.3.json`、`qa/verification-0.4.2.json`、`qa/verification-0.4.1.json`、`qa/verification-0.4.0.json` 和 `qa/verification.json`。
 
 播放器使用 QWidget + QPainter，不创建全屏画布。没有商店、账号、联网服务、插件运行时或 Agent 接入；本版的启动偏好指再次打开应用，不包含登录自启动。Qt 与依赖许可见 `THIRD_PARTY_NOTICES.txt`。Mac 原型为本地 ad-hoc 签名，尚未进行 Apple 公证。

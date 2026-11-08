@@ -2,7 +2,19 @@
 #include "statusentry-mac-bridge.h"
 #include <QAction>
 #include <QDebug>
+#include <QFile>
 #include <QGuiApplication>
+
+NSImage *PetDeskStatusPortrait(void) {
+    QFile iconFile(QStringLiteral(":/assets/PetDesk-status.png"));
+    if (!iconFile.open(QIODevice::ReadOnly)) return nil;
+    const QByteArray iconData = iconFile.readAll();
+    NSData *data = [NSData dataWithBytes:iconData.constData() length:iconData.size()];
+    NSImage *image = [[NSImage alloc] initWithData:data];
+    [image setSize:NSMakeSize(18, 18)];
+    [image setTemplate:NO];
+    return image;
+}
 
 @implementation PetDeskStatusTarget
 - (void)performAction:(NSMenuItem *)item {
@@ -41,8 +53,11 @@ struct StatusEntry::Impl {
         add(open); add(importPet); [menu addItem:NSMenuItem.separatorItem];
         add(visibility); add(pause); [menu addItem:NSMenuItem.separatorItem]; add(quit);
         status = [NSStatusBar.systemStatusBar statusItemWithLength:NSSquareStatusItemLength];
-        NSImage *image = [NSImage imageWithSystemSymbolName:@"face.smiling" accessibilityDescription:@"PetDesk"];
-        [image setTemplate:YES];
+        NSImage *image = PetDeskStatusPortrait();
+        if (!image) {
+            image = [NSImage imageWithSystemSymbolName:@"face.smiling" accessibilityDescription:@"PetDesk"];
+            [image setTemplate:YES];
+        }
         status.button.image = image; status.button.toolTip = @"PetDesk";
         [status.button setAccessibilityLabel:@"PetDesk"];
         [status.button setAccessibilityIdentifier:@"PetDeskStatusItem"];

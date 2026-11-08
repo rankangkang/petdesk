@@ -2,6 +2,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QMenu>
+#include <QPixmap>
 #include <QSignalSpy>
 #include <QSystemTrayIcon>
 #include <QtTest>
@@ -21,6 +22,7 @@ private slots:
             if (widget->objectName() == "petdeskStatusMenu") menu = qobject_cast<QMenu *>(widget);
         QVERIFY(menu); QCOMPARE(menu->defaultAction(), &open);
         auto *tray = menu->findChild<QSystemTrayIcon *>("petdeskStatusEntry"); QVERIFY(tray);
+        QVERIFY(!tray->icon().pixmap(16, 16).isNull());
         emit tray->activated(QSystemTrayIcon::Trigger);
         emit tray->activated(QSystemTrayIcon::DoubleClick);
         emit tray->activated(QSystemTrayIcon::Context);

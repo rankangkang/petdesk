@@ -1,0 +1,23 @@
+{
+  "application": "PetDesk",
+  "version": "0.4.4",
+  "date": "2026-11-08",
+  "platform_tested": "macOS 27.0.1, Apple Silicon",
+  "qt_version": "6.9.3",
+  "checks": {
+    "automated_test_suites_passed": 6,
+    "mac_status_portrait_resource_decodes": true,
+    "qt_status_portrait_resource_decodes": true,
+    "icon_assets_reproducible_from_artwork": true,
+    "windows_ico_contains_seven_sizes": true,
+    "bundle_dependency_check_passed": true,
+    "adhoc_code_signature_verified": true,
+    "installed_app_opened_existing_pet_library": true,
+    "finder_quick_look_showed_new_app_icon": true
+  },
+  "limits": [
+    "The 0.4.4 macOS status-menu click could not be visually verified by the automation interface.",
+    "Windows and Linux have not been tested on those operating systems.",
+    "The macOS application is ad-hoc signed and is not notarized."
+  ]
+}
