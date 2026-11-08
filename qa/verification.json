@@ -1,0 +1,44 @@
+{
+  "application": "PetDesk",
+  "version": "0.1.0",
+  "date": "2026-11-08",
+  "platform_tested": "macOS 27.0.1, Apple Silicon M4",
+  "qt_version": "6.9.0",
+  "minimum_macos_for_this_build": "14.0",
+  "architecture": "arm64",
+  "checks": {
+    "import_contract_test_cases_passed": 8,
+    "real_project_directory_validated": true,
+    "real_skill_run_directory_validated": true,
+    "real_skill_delivery_directory_validated": true,
+    "real_standard_webp_package_validated": true,
+    "directory_selected_through_native_file_picker": true,
+    "preview_and_import_completed_through_gui": true,
+    "native_pet_visible": true,
+    "right_click_management_panel_verified": true,
+    "drag_position_saved": true,
+    "125_percent_size_verified": true,
+    "pause_keeps_idle_frame_visible": true,
+    "jump_animation_visually_verified": true,
+    "gaze_setting_toggle_verified": true,
+    "quit_and_restart_restore_pet_and_settings": true,
+    "library_load_without_source_test_passed": true,
+    "copied_atlas_matches_original_bytes": true,
+    "bundle_external_homebrew_dependency_references": 0,
+    "running_app_external_homebrew_libraries": 0,
+    "adhoc_code_signature_verified": true
+  },
+  "original_atlas_sha256": "2444042e3fd1d23cc47b72589592bf90eaa76d0829bd1e70da39839734cef64b",
+  "final_settings": {
+    "size_percent": 100,
+    "paused": false,
+    "gaze_enabled": false
+  },
+  "limitations": [
+    "Windows, Linux and Intel Mac have not been tested.",
+    "The app is locally ad-hoc signed, without Developer ID signing or Apple notarization.",
+    "All sixteen gaze directions were structurally validated, not individually exercised through the GUI.",
+    "Tray-native menu interaction was not separately exercised; the right-click management panel was verified.",
+    "CPU, memory and energy comparison testing was not resumed."
+  ]
+}

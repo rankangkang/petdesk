@@ -1,0 +1,17 @@
+PetDesk 0.1.0 local prototype
+
+Qt 6.9.0 (Core, Gui, Widgets, DBus and the Cocoa, macOS style and WebP plugins)
+Copyright The Qt Company Ltd. and contributors.
+Qt is dynamically linked. Qt offers LGPLv3/GPL and commercial licensing.
+License information: https://doc.qt.io/qt-6.9/licensing.html
+Source release: https://download.qt.io/archive/qt/6.9/6.9.0/single/
+The local package does not modify the Qt libraries.
+
+The macOS deployment also copies dependencies of the installed Homebrew Qt
+libraries. Their installed license notices are included in the packaged app's
+Contents/Resources/licenses directory where available. They remain governed
+by their respective licenses.
+
+Hu Tao / 胡桃 artwork was created from the user's avatar in this workspace.
+The application icon is an extracted and resized idle frame. No license to
+redistribute that artwork is granted by this prototype's source files.

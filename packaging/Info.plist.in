@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>PetDesk</string>
+<key>CFBundleIdentifier</key><string>dev.cmkk.petdesk</string>
+<key>CFBundleName</key><string>PetDesk</string>
+<key>CFBundleDisplayName</key><string>PetDesk</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleShortVersionString</key><string>0.1.0</string>
+<key>CFBundleVersion</key><string>0.1.0</string>
+<key>CFBundleIconFile</key><string>PetDesk.icns</string>
+<key>NSHighResolutionCapable</key><true/>
+<key>LSUIElement</key><true/>
+<key>LSMinimumSystemVersion</key><string>14.0</string>
+<key>NSHumanReadableCopyright</key><string>PetDesk local prototype</string>
+</dict></plist>
