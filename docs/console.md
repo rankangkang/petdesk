@@ -26,9 +26,9 @@ macOS 文件选择器从用户主目录开始，避免 Qt 在显示系统选择�
 
 ## 入口与生命周期
 
-默认启动即打开控制台，macOS 使用正常 Dock 应用。关闭窗口默认收起，另有明确的退出按钮；应用偏好可选择关闭即退出。收起控制台后，桌宠右键、菜单栏入口和再次打开应用均可找回窗口。
+默认启动即打开控制台。macOS 以菜单栏应用运行，不占用 Dock；点击菜单栏图标打开原生菜单。Windows 通知区域的左键打开控制台，右键打开菜单；通知区域图标可能被系统放进折叠区域。关闭窗口默认收起，另有明确的退出按钮；应用偏好可选择关闭即退出。收起控制台后，桌宠右键、系统入口和再次打开应用均可找回窗口。
 
-macOS 接收公开的 reopen AppleEvent 以处理 Dock 再次打开。其他重复进程通过数据目录内的原子请求文件唤起已有控制台，由 QFileSystemWatcher 监听，不使用轮询、TCP、后台进程或 Agent。
+macOS 接收公开的 reopen AppleEvent 来处理再次打开应用。其他重复进程通过数据目录内的原子请求文件唤起已有控制台，由 QFileSystemWatcher 监听，不使用轮询、TCP、后台进程或 Agent。
 
 导航和宠物项使用可访问的原生按钮，避免依赖旧 Qt 的合成表格辅助功能接口；切换当前宠物时复用已有条目。关闭控制台不会拒绝应用的显式退出。
 
@@ -37,5 +37,7 @@ macOS 接收公开的 reopen AppleEvent 以处理 Dock 再次打开。其他重�
 ## Mac 运行库要求
 
 [Qt 官方修复 ae0bd2c](https://github.com/qt/qtbase/commit/ae0bd2c52d5e7f112dcace027b4d279b532e1b86)修复 Cocoa 辅助功能缓存的引用计数问题；Qt 6.9.0 不含该修复。本次使用官方 Qt 6.9.3 SDK，项目 SDK 与个人 Homebrew Qt 分开存放。
+
+macOS 27 的菜单栏事件可能不是鼠标事件；Qt 6.9.3 的托盘实现仍直接读取 `clickCount`，会在菜单打开时触发 AppKit 异常。Qt 后续代码在访问前增加了事件类型检查。PetDesk 的 macOS 入口使用 AppKit 的 `NSStatusItem` 和 `NSMenu`，不创建 Qt 托盘对象，避免经过该路径；Windows 和 Linux 继续使用 Qt 系统托盘。参见 [Qt 6.9.3 的实现](https://github.com/qt/qtbase/blob/v6.9.3/src/plugins/platforms/cocoa/qcocoasystemtrayicon.mm)与[后续实现](https://github.com/qt/qtbase/blob/6.12/src/plugins/platforms/cocoa/qcocoasystemtrayicon.mm)。
 
 打包通过 `qt.conf` 和运行时插件路径限制，仅从应用内的 `Contents/PlugIns` 加载插件，避免误装载其他 Qt 环境。使用包内 SDK 构建，检查所有 Mach-O 的外部依赖，最后执行 ad-hoc 签名与验证。依据是 [Qt 的 qt.conf 路径规则](https://doc.qt.io/qt-6/qt-conf.html)。

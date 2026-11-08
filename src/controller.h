@@ -4,11 +4,10 @@
 #include "petformat.h"
 #include "petwindow.h"
 #include "preferences.h"
-#include <QMenu>
-#include <QSystemTrayIcon>
 #include <memory>
 
 namespace petdesk {
+class StatusEntry;
 class Controller final : public QObject {
 public:
     explicit Controller(const QString &dataRoot, bool migrateLegacy = true);
@@ -33,8 +32,7 @@ private:
     Preferences m_preferences;
     PetWindow m_pet;
     ManagerWindow *m_manager;
-    QMenu m_menu;
-    QSystemTrayIcon m_tray;
+    std::unique_ptr<StatusEntry> m_statusEntry;
     QAction *m_pause, *m_visibility;
     QString m_currentKey;
     PetEntry m_currentEntry;

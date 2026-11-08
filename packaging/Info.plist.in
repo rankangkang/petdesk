@@ -10,7 +10,7 @@
 <key>CFBundleVersion</key><string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
 <key>CFBundleIconFile</key><string>PetDesk.icns</string>
 <key>NSHighResolutionCapable</key><true/>
-<key>LSUIElement</key><false/>
+<key>LSUIElement</key><true/>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHumanReadableCopyright</key><string>PetDesk local prototype</string>
 </dict></plist>

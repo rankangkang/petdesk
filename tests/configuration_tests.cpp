@@ -313,6 +313,14 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(window->isVisible(), 2000);
         QVERIFY(!QFile::exists(root.filePath("open-console.request")));
     }
+    void openingConsoleRestoresAMinimizedWindow() {
+        QTemporaryDir root;
+        Controller controller(root.path(), false); controller.start();
+        auto *window = console(); QVERIFY(window);
+        window->showMinimized(); QVERIFY(window->isMinimized());
+        controller.showManager();
+        QVERIFY(window->isVisible()); QVERIFY(!window->isMinimized());
+    }
     void explicitQuietStartupWithExistingPetStaysQuietUntilOpened() {
         QTemporaryDir root, source;
         makeSource(source.path()); PetLibrary library(root.filePath("pets"));

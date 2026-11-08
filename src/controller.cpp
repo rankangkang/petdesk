@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "statusentry.h"
 #include "uistyle.h"
 #include <QAction>
 #include <QApplication>
@@ -13,7 +14,6 @@
 #include <QMenuBar>
 #include <QPushButton>
 #include <QScreen>
-#include <QStyle>
 #include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -30,7 +30,7 @@ QLabel *label(const QString &text) {
 }
 Controller::Controller(const QString &dataRoot, bool migrateLegacy)
     : m_root(dataRoot), m_library(QDir(dataRoot).filePath("pets")),
-      m_preferences(dataRoot, migrateLegacy), m_manager(new ManagerWindow), m_tray(this) {
+      m_preferences(dataRoot, migrateLegacy), m_manager(new ManagerWindow) {
     auto &settings = m_preferences.state();
     m_paused = settings.value("paused", false).toBool();
     m_manager->setAppOptions(m_preferences.app());
@@ -88,30 +88,28 @@ Controller::Controller(const QString &dataRoot, bool migrateLegacy)
     appMenu->addSeparator();
     auto *quit = appMenu->addAction(QStringLiteral("退出 PetDesk"), qApp, &QApplication::quit);
     quit->setMenuRole(QAction::QuitRole); quit->setShortcut(QKeySequence::Quit);
-    m_menu.addAction(QStringLiteral("打开控制台"), this, [this] { showManager(); });
-    m_menu.addAction(QStringLiteral("导入桌宠…"), this, [this] { importFolder(); });
-    m_menu.addSeparator();
-    m_visibility = m_menu.addAction(QStringLiteral("显示桌宠"), this, [this] { setPetVisible(!m_pet.isVisible()); });
-    m_pause = m_menu.addAction(QStringLiteral("暂停动画")); m_pause->setCheckable(true); m_pause->setChecked(m_paused);
+    // Tray commands are separate from window shortcuts, which are not global.
+    auto *statusOpen = new QAction(QStringLiteral("打开控制台"), this);
+    connect(statusOpen, &QAction::triggered, this, [this] { showManager(); });
+    auto *statusImport = new QAction(QStringLiteral("导入桌宠…"), this);
+    connect(statusImport, &QAction::triggered, this, [this] { importFolder(); });
+    auto *statusQuit = new QAction(QStringLiteral("退出 PetDesk"), this);
+    connect(statusQuit, &QAction::triggered, qApp, &QApplication::quit);
+    m_visibility = new QAction(QStringLiteral("显示桌宠"), this);
+    connect(m_visibility, &QAction::triggered, this, [this] { setPetVisible(!m_pet.isVisible()); });
+    m_pause = new QAction(QStringLiteral("暂停动画"), this); m_pause->setCheckable(true); m_pause->setChecked(m_paused);
     connect(m_pause, &QAction::toggled, this, [this](bool paused) {
         m_paused = paused; m_preferences.state().setValue("paused", paused); m_pet.setPaused(paused); syncCurrent();
     });
     connect(m_manager, &ManagerWindow::pauseRequested, m_pause, &QAction::setChecked);
-    m_menu.addSeparator();
-    m_menu.addAction(QStringLiteral("退出 PetDesk"), qApp, &QApplication::quit);
-    m_tray.setIcon(QApplication::windowIcon().isNull() ? QApplication::style()->standardIcon(QStyle::SP_DesktopIcon) : QApplication::windowIcon());
-    m_tray.setToolTip("PetDesk · 桌宠控制台"); m_tray.setContextMenu(&m_menu);
-    connect(&m_tray, &QSystemTrayIcon::activated, this, [this](auto reason) {
-        if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) showManager();
-    });
-    m_tray.show();
+    m_statusEntry = std::make_unique<StatusEntry>(statusOpen, statusImport, m_visibility, m_pause, statusQuit);
     connect(qApp, &QGuiApplication::screenAdded, this, [this] { refreshScreens(); });
     connect(qApp, &QGuiApplication::screenRemoved, this, [this] { refreshScreens(); });
     connect(qApp, &QCoreApplication::aboutToQuit, this, [this] {
-        m_preferences.state().sync(); m_pet.hide(); m_tray.hide(); m_manager->hide();
+        m_preferences.state().sync(); m_pet.hide(); m_statusEntry.reset(); m_manager->hide();
     });
 }
-Controller::~Controller() { setReopenHandler({}); m_pet.activityChanged = {}; delete m_manager; }
+Controller::~Controller() { setReopenHandler({}); m_statusEntry.reset(); m_pet.activityChanged = {}; delete m_manager; }
 
 void Controller::start() {
     auto &state = m_preferences.state();
@@ -136,7 +134,9 @@ void Controller::start() {
 }
 void Controller::showManager() {
     refreshLibrary(); refreshScreens(); syncCurrent();
-    m_manager->show(); m_manager->raise(); m_manager->activateWindow();
+    if (m_manager->isMinimized()) m_manager->showNormal(); else m_manager->show();
+    m_manager->raise(); m_manager->activateWindow();
+    if (m_statusEntry) m_statusEntry->activateApplication();
 }
 void Controller::refreshLibrary() {
     try { m_manager->setLibrary(m_library.entries(), m_library.archivedEntries(), m_currentKey, m_pet.isVisible()); }
