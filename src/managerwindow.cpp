@@ -242,7 +242,8 @@ ManagerWindow::ManagerWindow() {
     connect(toLibrary, &QPushButton::clicked, this, [this] { showPage(0); }); noCurrentLayout->addWidget(toLibrary, 0, Qt::AlignLeft); noCurrentLayout->addStretch();
     m_runtimeState->addWidget(noCurrent);
     auto *runtime = new QWidget; auto *runtimeBody = new QVBoxLayout(runtime); runtimeBody->setContentsMargins(0, 0, 0, 0); runtimeBody->setSpacing(14);
-    m_currentName = text({}, "currentPetName"); runtimeBody->addWidget(m_currentName, 0, Qt::AlignLeft);
+    m_currentName = new ui::ElidedLabel; m_currentName->setObjectName("currentPetName");
+    runtimeBody->addWidget(m_currentName);
     auto *displayLayout = new QVBoxLayout; displayLayout->setSpacing(6);
     auto *sizeControls = new QWidget;
     auto *sizeRow = new QHBoxLayout(sizeControls); sizeRow->setContentsMargins(0, 0, 0, 0); sizeRow->setSpacing(10);
@@ -422,7 +423,7 @@ void ManagerWindow::setCurrentPet(const PetEntry &entry, PetOptions options, boo
     const QScopedValueRollback<bool> blocker(m_syncing, true);
     m_hasPet = !entry.key.isEmpty(); m_currentKey = entry.key; m_currentNameText = entry.name; m_petVisible = visible;
     m_runtimeState->setCurrentIndex(m_hasPet ? 1 : 0);
-    m_currentName->setText(QStringLiteral("当前桌宠：") + entry.name);
+    m_currentName->setFullText(QStringLiteral("当前桌宠：") + entry.name);
     m_size->setValue(options.size);
     m_gaze->setChecked(options.gaze && entry.version == 2); m_gaze->setEnabled(entry.version == 2);
     m_gazeHint->setText(QStringLiteral("该桌宠不支持注视"));

@@ -67,8 +67,8 @@ private:
     QStackedWidget *m_pages, *m_libraryState, *m_runtimeState;
     QTabWidget *m_libraryTabs;
     QLabel *m_preview, *m_description, *m_capabilities;
-    ui::ElidedLabel *m_name;
-    QLabel *m_currentName, *m_gazeHint, *m_status, *m_notice, *m_sizeValue;
+    ui::ElidedLabel *m_name, *m_currentName;
+    QLabel *m_gazeHint, *m_status, *m_notice, *m_sizeValue;
     QLabel *m_footDot;
     QPushButton *m_import, *m_use, *m_archive, *m_reveal, *m_restore, *m_visibility;
     QPushButton *m_playAction, *m_playActivity;

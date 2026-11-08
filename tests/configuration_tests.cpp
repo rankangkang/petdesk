@@ -100,6 +100,24 @@ private slots:
         QCOMPARE(page->widget()->width(), page->viewport()->width());
         QCOMPARE(window.width(), 800);
     }
+    void currentPetNameFitsWithoutClippingOrExpandingWindow() {
+        ManagerWindow window; window.resize(800, 600);
+        auto pet = entry("current"); pet.name = QStringLiteral("皮蛋 · 像素版");
+        window.setCurrentPet(pet, {}, false, true); window.showPage(1); window.show();
+        QCoreApplication::processEvents();
+        auto *name = window.findChild<QLabel *>("currentPetName"); QVERIFY(name);
+        QCOMPARE(name->text(), QStringLiteral("当前桌宠：皮蛋 · 像素版"));
+        QVERIFY(name->fontMetrics().horizontalAdvance(name->text()) <= name->contentsRect().width());
+        QVERIFY(name->fontMetrics().height() <= name->contentsRect().height());
+
+        pet.name = QString(100, QChar(0x6843));
+        window.setCurrentPet(pet, {}, false, true); QCoreApplication::processEvents();
+        QCOMPARE(window.width(), 800);
+        QCOMPARE(name->accessibleName(), QStringLiteral("当前桌宠：") + pet.name);
+        QVERIFY(name->text().endsWith(QChar(0x2026)));
+        QVERIFY(name->fontMetrics().horizontalAdvance(name->text()) <= name->contentsRect().width());
+        QVERIFY(name->fontMetrics().height() <= name->contentsRect().height());
+    }
     void importPreviewSupportsCancelAndImportWithoutActivation() {
         QTemporaryDir root, source;
         makeSource(source.path());

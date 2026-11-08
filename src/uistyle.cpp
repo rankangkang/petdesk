@@ -108,7 +108,7 @@ QLabel#emptyTitle { color: #262626; font-size: 15px; font-weight: 600; }
 QLabel#settingTitle { color: #2f2f2f; font-size: 12px; font-weight: 600; }
 QLabel#petName { color: #202123; font-size: 18px; font-weight: 700; }
 QLabel#capabilities { color: #6e6e70; font-size: 11px; }
-QLabel#currentPetName { color: #555555; background: #f3f3f3; border-radius: 6px; padding: 7px 10px; font-size: 12px; }
+QLabel#currentPetName { color: #6e6e70; font-size: 12px; }
 QFrame#sectionCard, QFrame#detailCard, QFrame#emptyCard,
 QFrame#removedCard, QFrame#aboutCard { background: #ffffff; border: 1px solid #e7e7e7; border-radius: 9px; }
 QFrame#listCard { background: transparent; border: 0; }
