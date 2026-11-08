@@ -1,0 +1,16 @@
+{
+  "qt_version": "6.9.3",
+  "archive_hashes_verified_against": "https://download.qt.io/online/qtsdkrepository/mac_x64/desktop/qt6_693/qt6_693/",
+  "archives": [
+    {
+      "archive": "6.9.3-0-202509261207qtbase-MacOS-MacOS_15-Clang-MacOS-MacOS_15-X86_64-ARM64.7z",
+      "sha256": "805144e619b7c7b0e9c985d929e1f290241d88b884218db3ad7d56bd579d6b4a"
+    },
+    {
+      "archive": "6.9.3-0-202509261207qttools-MacOS-MacOS_15-Clang-MacOS-MacOS_15-X86_64-ARM64.7z",
+      "sha256": "e5fdf08f13e2056cb99c8e57be046bb24e2bf4e1c678ad4ac85a29ebfdf06d20"
+    }
+  ],
+  "imageformats_module": "Qt 6.9.3 qtimageformats installed with aqtinstall checksum validation",
+  "package_architecture": "arm64"
+}
