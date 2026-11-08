@@ -39,13 +39,15 @@ static bool writeIco(const QImage &image, const QString &path) {
 
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
-    if (argc != 6) {
-        qWarning("Usage: petdesk_icon_generator artwork.png app.png app.iconset status.png app.ico");
+    if (argc != 7) {
+        qWarning("Usage: petdesk_icon_generator artwork.png status-artwork.png app.png app.iconset status.png app.ico");
         return 2;
     }
     const QImage artwork(QString::fromLocal8Bit(argv[1]));
-    if (artwork.isNull() || artwork.width() != artwork.height()) {
-        qWarning("The source artwork must be a square image");
+    const QImage statusArtwork(QString::fromLocal8Bit(argv[2]));
+    if (artwork.isNull() || artwork.width() != artwork.height() || statusArtwork.isNull() ||
+        statusArtwork.width() != statusArtwork.height() || !statusArtwork.hasAlphaChannel()) {
+        qWarning("The source images must be square, and the status artwork must have an alpha channel");
         return 1;
     }
     QImage master(1024, 1024, QImage::Format_ARGB32_Premultiplied);
@@ -57,9 +59,9 @@ int main(int argc, char **argv) {
     painter.setClipPath(tile);
     painter.drawImage(QRectF(64, 64, 896, 896), artwork);
     painter.end();
-    if (!master.save(QString::fromLocal8Bit(argv[2]))) return 1;
+    if (!master.save(QString::fromLocal8Bit(argv[3]))) return 1;
 
-    const QDir iconset(QString::fromLocal8Bit(argv[3]));
+    const QDir iconset(QString::fromLocal8Bit(argv[4]));
     if (!QDir().mkpath(iconset.path())) return 1;
     for (int size : {16, 32, 128, 256, 512}) for (int scale : {1, 2}) {
         const QString name = QString("icon_%1x%1%2.png").arg(size).arg(scale == 2 ? "@2x" : "");
@@ -67,17 +69,15 @@ int main(int argc, char **argv) {
                  .save(iconset.filePath(name))) return 1;
     }
 
-    // A closer crop of the same portrait stays recognizable in the small status area.
+    // Fit the transparent portrait into the small status area without a background tile.
     QImage status(128, 128, QImage::Format_ARGB32_Premultiplied);
     status.fill(Qt::transparent);
     QPainter statusPainter(&status);
     statusPainter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    QPainterPath statusShape;
-    statusShape.addRoundedRect(QRectF(2, 2, 124, 124), 25, 25);
-    statusPainter.setClipPath(statusShape);
-    const qreal unit = artwork.width() / 1254.0;
-    statusPainter.drawImage(QRectF(2, 2, 124, 124), artwork, QRectF(255 * unit, 100 * unit, 745 * unit, 745 * unit));
+    const qreal unit = statusArtwork.width() / 1254.0;
+    statusPainter.drawImage(QRectF(2, 2, 124, 124), statusArtwork,
+                            QRectF(125 * unit, 125 * unit, 1000 * unit, 1000 * unit));
     statusPainter.end();
-    if (!status.save(QString::fromLocal8Bit(argv[4]))) return 1;
-    return writeIco(master, QString::fromLocal8Bit(argv[5])) ? 0 : 1;
+    if (!status.save(QString::fromLocal8Bit(argv[5]))) return 1;
+    return writeIco(master, QString::fromLocal8Bit(argv[6])) ? 0 : 1;
 }

@@ -1,6 +1,7 @@
 #include "statusentry.h"
 #include <QAction>
 #include <QApplication>
+#include <QImage>
 #include <QMenu>
 #include <QPixmap>
 #include <QSignalSpy>
@@ -11,6 +12,14 @@ using namespace petdesk;
 class StatusEntryQtTests : public QObject {
     Q_OBJECT
 private slots:
+    void statusPortraitHasNoBackgroundTile() {
+        const QImage portrait(QStringLiteral(":/assets/PetDesk-status.png"));
+        QVERIFY(!portrait.isNull());
+        QCOMPARE(portrait.size(), QSize(128, 128));
+        for (const QPoint &point : {QPoint(16, 16), QPoint(112, 16), QPoint(16, 112), QPoint(112, 112)})
+            QCOMPARE(portrait.pixelColor(point).alpha(), 0);
+        QVERIFY(portrait.pixelColor(64, 64).alpha() > 0);
+    }
     void clickingOpensTheManagerAndContextDoesNotQuit() {
         QAction open(QStringLiteral("打开控制台"), this), importPet(QStringLiteral("导入桌宠"), this);
         QAction visibility(QStringLiteral("显示桌宠"), this), pause(QStringLiteral("暂停动画"), this);

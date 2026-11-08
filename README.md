@@ -79,12 +79,12 @@ bash scripts/package-macos.sh
 
 ```sh
 cmake --build build --target petdesk_icon_generator
-build/petdesk_icon_generator assets/PetDesk-artwork.png assets/PetDesk.png build/PetDesk.iconset assets/PetDesk-status.png assets/PetDesk.ico
+build/petdesk_icon_generator assets/PetDesk-artwork.png assets/PetDesk-status-artwork.png assets/PetDesk.png build/PetDesk.iconset assets/PetDesk-status.png assets/PetDesk.ico
 iconutil -c icns build/PetDesk.iconset -o assets/PetDesk.icns
 ```
 
 ## 验证与范围
 
-导入、动作、窗口生命周期和配置测试覆盖空库入口、多宠物独立设置、旧配置迁移、移出恢复、重复导入、再次打开控制台，以及原有动画与注视契约。图标和 Mac 验证见 `qa/verification-0.4.4.json`；此前版本的验证记录见 `qa/verification-0.4.3.json`、`qa/verification-0.4.2.json`、`qa/verification-0.4.1.json`、`qa/verification-0.4.0.json` 和 `qa/verification.json`。
+导入、动作、窗口生命周期和配置测试覆盖空库入口、多宠物独立设置、旧配置迁移、移出恢复、重复导入、再次打开控制台，以及原有动画与注视契约。图标和 Mac 验证见 `qa/verification-0.4.5.json`；此前版本的验证记录见 `qa/verification-0.4.4.json`、`qa/verification-0.4.3.json`、`qa/verification-0.4.2.json`、`qa/verification-0.4.1.json`、`qa/verification-0.4.0.json` 和 `qa/verification.json`。
 
 播放器使用 QWidget + QPainter，不创建全屏画布。没有商店、账号、联网服务、插件运行时或 Agent 接入；本版的启动偏好指再次打开应用，不包含登录自启动。Qt 与依赖许可见 `THIRD_PARTY_NOTICES.txt`。Mac 原型为本地 ad-hoc 签名，尚未进行 Apple 公证。
