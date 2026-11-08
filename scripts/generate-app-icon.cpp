@@ -13,10 +13,10 @@ int main(int argc, char **argv) {
     QPainter p(&master);
     p.setRenderHint(QPainter::Antialiasing);
     p.setPen(Qt::NoPen);
-    p.setBrush(QColor("#5164d9")); p.drawRoundedRect(QRectF(64, 64, 896, 896), 200, 200);
+    p.setBrush(QColor("#365d47")); p.drawRoundedRect(QRectF(64, 64, 896, 896), 200, 200);
     p.setBrush(QColor(255, 255, 255, 110)); p.drawRoundedRect(QRectF(212, 234, 520, 390), 34, 34);
     p.setBrush(Qt::white); p.drawRoundedRect(QRectF(292, 350, 520, 390), 34, 34);
-    p.setBrush(QColor("#5164d9")); p.drawRoundedRect(QRectF(330, 470, 444, 226), 16, 16);
+    p.setBrush(QColor("#365d47")); p.drawRoundedRect(QRectF(330, 470, 444, 226), 16, 16);
     p.drawEllipse(QPointF(338, 410), 10, 10); p.drawEllipse(QPointF(376, 410), 10, 10);
     p.end();
     if (!master.save(QString::fromLocal8Bit(argv[1]))) return 1;

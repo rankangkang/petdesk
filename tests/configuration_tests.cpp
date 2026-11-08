@@ -2,16 +2,22 @@
 #include "controller.h"
 #include "managerwindow.h"
 #include "preferences.h"
+#include "uistyle.h"
+#include <QAbstractItemView>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDialog>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QCloseEvent>
 #include <QPushButton>
+#include <QRadioButton>
+#include <QScrollArea>
 #include <QSignalSpy>
 #include <QStackedWidget>
 #include <QTemporaryDir>
+#include <QTimer>
 #include <QtTest>
 
 // Reopen delivery is checked through the real packaged macOS app, not the headless test.
@@ -44,6 +50,84 @@ void makeSource(const QString &path, const QString &name = "Example") {
 class ConfigurationTests : public QObject {
     Q_OBJECT
 private slots:
+    void switchRespondsToKeyboardAndMouse() {
+        ui::Toggle toggle(QStringLiteral("看向鼠标"));
+        toggle.show(); toggle.setFocus();
+        QCOMPARE(toggle.accessibleName(), QStringLiteral("看向鼠标"));
+        QVERIFY(!toggle.isChecked());
+        QTest::keyClick(&toggle, Qt::Key_Space);
+        QVERIFY(toggle.isChecked());
+        QTest::mouseClick(&toggle, Qt::LeftButton, Qt::NoModifier, toggle.rect().center());
+        QVERIFY(!toggle.isChecked());
+        toggle.setEnabled(false);
+        QTest::mouseClick(&toggle, Qt::LeftButton, Qt::NoModifier, toggle.rect().center());
+        QVERIFY(!toggle.isChecked());
+    }
+    void styledComboBoxOpensAndChangesSelection() {
+        ui::ComboBox combo;
+        combo.addItems({QStringLiteral("小"), QStringLiteral("大")}); combo.show();
+        QTest::mouseClick(&combo, Qt::LeftButton);
+        QVERIFY(combo.view()->isVisible());
+        QTest::keyClick(combo.view(), Qt::Key_Down);
+        QTest::keyClick(combo.view(), Qt::Key_Return);
+        QCOMPARE(combo.currentIndex(), 1);
+    }
+    void petPreviewIsReusedWhenBrowsing() {
+        ManagerWindow window;
+        QHash<QString, int> loads;
+        window.previewRequested = [&loads](const QString &key) {
+            ++loads[key]; QImage image(192, 208, QImage::Format_ARGB32); image.fill(Qt::green); return image;
+        };
+        window.setLibrary({entry("alpha"), entry("beta")}, {}, {}, false);
+        window.selectPet("alpha"); window.selectPet("alpha");
+        QCOMPARE(loads.value("alpha"), 1);
+        window.selectPet("beta"); window.selectPet("alpha");
+        QCOMPARE(loads.value("beta"), 1);
+        QCOMPARE(loads.value("alpha"), 1);
+    }
+    void longNamesRemainAccessibleWithoutExpandingTheLibrary() {
+        ManagerWindow window; window.resize(800, 600); window.show();
+        PetEntry longName = entry("alpha"); longName.name = QString(100, QChar(0x6843));
+        window.setLibrary({longName}, {}, {}, false); QCoreApplication::processEvents();
+        auto *choice = window.findChild<QRadioButton *>("pet-alpha"); QVERIFY(choice);
+        QCOMPARE(choice->accessibleName(), longName.name);
+        QVERIFY(choice->text().endsWith(QChar(0x2026)));
+        auto *hero = window.findChild<QLabel *>("petName"); QVERIFY(hero);
+        QCOMPARE(hero->accessibleName(), longName.name);
+        QVERIFY(hero->text().endsWith(QChar(0x2026)));
+        auto *page = window.findChildren<QScrollArea *>("pageScroll").first();
+        QCOMPARE(page->widget()->width(), page->viewport()->width());
+        QCOMPARE(window.width(), 800);
+    }
+    void importPreviewSupportsCancelAndImportWithoutActivation() {
+        QTemporaryDir root, source;
+        makeSource(source.path());
+        Controller controller(root.path(), false); controller.start();
+        auto *window = console(); QVERIFY(window);
+        auto respond = [window, &source](const QString &choice) {
+            bool foundPreview = false, foundChoice = false;
+            QTimer timer; timer.setSingleShot(true);
+            QObject::connect(&timer, &QTimer::timeout, window, [&] {
+                auto *dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget());
+                foundPreview = dialog && dialog->objectName() == "importPreview";
+                if (!dialog) return;
+                for (auto *button : dialog->findChildren<QPushButton *>()) {
+                    if (button->text() == choice) { foundChoice = true; button->click(); return; }
+                }
+                dialog->reject();
+            });
+            timer.start(0);
+            emit window->directoryDropped(source.path());
+            QCoreApplication::processEvents();
+            return foundPreview && foundChoice;
+        };
+        PetLibrary library(root.filePath("pets"));
+        QVERIFY(respond(QStringLiteral("取消")));
+        QCOMPARE(library.entries().size(), 0);
+        QVERIFY(respond(QStringLiteral("仅导入")));
+        QCOMPARE(library.entries().size(), 1);
+        QVERIFY(!window->findChild<QPushButton *>("toggleVisibility")->isEnabled());
+    }
     void firstRunHasVisibleImportAndNoUnusableRuntimeControls() {
         ManagerWindow window;
         window.show();

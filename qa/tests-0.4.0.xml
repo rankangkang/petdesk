@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Darwin-c++"
+	tests="4"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname="Mac"
+	time="5"
+	timestamp="2026-11-08T17:40:11"
+	>
+	<testcase name="importer" classname="importer" time="0.812096" status="run">
+		<properties/>
+		<system-out>********* Start testing of ImporterTests *********
+Config: Using QtTest library 6.9.3, Qt 6.9.3 (arm64-little_endian-lp64 shared (dynamic) release build; by Apple LLVM 16.0.0 (clang-1600.0.26.3)), macos 27.0.1
+PASS   : ImporterTests::initTestCase()
+PASS   : ImporterTests::projectDirectoryPreservesNameAndPixels()
+PASS   : ImporterTests::standardWebpPackage()
+PASS   : ImporterTests::skillRunPrefersFinalV2OverIntermediateV1()
+PASS   : ImporterTests::legacyV1WithoutVersionMarker()
+PASS   : ImporterTests::rejectsVersionMismatchAndMissingRequiredFrames()
+PASS   : ImporterTests::rejectsPathsOutsideSelectedDirectory()
+PASS   : ImporterTests::rejectsMalformedMetadataAndWrongDigest()
+PASS   : ImporterTests::copiedLibrarySurvivesSourceRemovalAndDeduplicates()
+PASS   : ImporterTests::cleanupTestCase()
+Totals: 10 passed, 0 failed, 0 skipped, 0 blacklisted, 772ms
+********* Finished testing of ImporterTests *********
+</system-out>
+	</testcase>
+	<testcase name="behavior" classname="behavior" time="0.022639" status="run">
+		<properties/>
+		<system-out>********* Start testing of BehaviorTests *********
+Config: Using QtTest library 6.9.3, Qt 6.9.3 (arm64-little_endian-lp64 shared (dynamic) release build; by Apple LLVM 16.0.0 (clang-1600.0.26.3)), macos 27.0.1
+PASS   : BehaviorTests::initTestCase()
+PASS   : BehaviorTests::focusedActivityFinishesInOrder()
+PASS   : BehaviorTests::allAuthoredRowsAndFramesAreUsedWithoutPadding()
+PASS   : BehaviorTests::explicitInputPreemptsAutomaticButAutomaticCannotPreemptInput()
+PASS   : BehaviorTests::draggingIsExclusiveAndReleaseClearsItsPriority()
+PASS   : BehaviorTests::explicitReplacementDoesNotQueueOldActivity()
+PASS   : BehaviorTests::invalidTimelineCannotReplaceCurrentState()
+PASS   : BehaviorTests::automaticPolicyHasCooldownNoImmediateRepeatsAndOptionalWalking()
+PASS   : BehaviorTests::allSixteenGazeDirectionsUseClockwiseViewerCoordinates()
+PASS   : BehaviorTests::walksStayInsideOffsetAndSmallScreens()
+PASS   : BehaviorTests::cleanupTestCase()
+Totals: 11 passed, 0 failed, 0 skipped, 0 blacklisted, 1ms
+********* Finished testing of BehaviorTests *********
+</system-out>
+	</testcase>
+	<testcase name="window_lifecycle" classname="window_lifecycle" time="2.87923" status="run">
+		<properties/>
+		<system-out>********* Start testing of WindowTests *********
+Config: Using QtTest library 6.9.3, Qt 6.9.3 (arm64-little_endian-lp64 shared (dynamic) release build; by Apple LLVM 16.0.0 (clang-1600.0.26.3)), macos 27.0.1
+PASS   : WindowTests::initTestCase()
+QWARN  : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt() This plugin does not support setting window masks
+QWARN  : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt() This plugin does not support raise()
+QINFO  : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt() activity: 认真琢磨 trigger: 2
+QWARN  : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt() This plugin does not support raise()
+PASS   : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt()
+QWARN  : WindowTests::pausingStopsAnActiveWalkAtItsCurrentPosition() This plugin does not support setting window masks
+QWARN  : WindowTests::pausingStopsAnActiveWalkAtItsCurrentPosition() This plugin does not support raise()
+QINFO  : WindowTests::pausingStopsAnActiveWalkAtItsCurrentPosition() activity: 向左散步 trigger: 2
+PASS   : WindowTests::pausingStopsAnActiveWalkAtItsCurrentPosition()
+QWARN  : WindowTests::manualWalkMovesAndFinishesAtItsBoundedTarget() This plugin does not support setting window masks
+QWARN  : WindowTests::manualWalkMovesAndFinishesAtItsBoundedTarget() This plugin does not support raise()
+QINFO  : WindowTests::manualWalkMovesAndFinishesAtItsBoundedTarget() activity: 向左散步 trigger: 2
+QINFO  : WindowTests::manualWalkMovesAndFinishesAtItsBoundedTarget() activity: 打招呼 trigger: 2
+PASS   : WindowTests::manualWalkMovesAndFinishesAtItsBoundedTarget()
+QWARN  : WindowTests::managerSuspensionDoesNotBlockAnExplicitActivity() This plugin does not support setting window masks
+QWARN  : WindowTests::managerSuspensionDoesNotBlockAnExplicitActivity() This plugin does not support raise()
+QINFO  : WindowTests::managerSuspensionDoesNotBlockAnExplicitActivity() activity: 再试一次 trigger: 2
+PASS   : WindowTests::managerSuspensionDoesNotBlockAnExplicitActivity()
+PASS   : WindowTests::cleanupTestCase()
+Totals: 6 passed, 0 failed, 0 skipped, 0 blacklisted, 2841ms
+********* Finished testing of WindowTests *********
+</system-out>
+	</testcase>
+	<testcase name="configuration" classname="configuration" time="1.3215" status="run">
+		<properties/>
+		<system-out>********* Start testing of ConfigurationTests *********
+Config: Using QtTest library 6.9.3, Qt 6.9.3 (arm64-little_endian-lp64 shared (dynamic) release build; by Apple LLVM 16.0.0 (clang-1600.0.26.3)), macos 27.0.1
+PASS   : ConfigurationTests::initTestCase()
+PASS   : ConfigurationTests::switchRespondsToKeyboardAndMouse()
+QWARN  : ConfigurationTests::styledComboBoxOpensAndChangesSelection() qt.qpa.fonts: Populating font family aliases took 67 ms. Replace uses of missing font family "Sans Serif" with one that exists to avoid this cost.
+QWARN  : ConfigurationTests::styledComboBoxOpensAndChangesSelection() This plugin does not support raise()
+QWARN  : ConfigurationTests::styledComboBoxOpensAndChangesSelection() This plugin does not support grabbing the keyboard
+PASS   : ConfigurationTests::styledComboBoxOpensAndChangesSelection()
+PASS   : ConfigurationTests::petPreviewIsReusedWhenBrowsing()
+PASS   : ConfigurationTests::longNamesRemainAccessibleWithoutExpandingTheLibrary()
+QWARN  : ConfigurationTests::importPreviewSupportsCancelAndImportWithoutActivation() This plugin does not support raise()
+QWARN  : ConfigurationTests::importPreviewSupportsCancelAndImportWithoutActivation() This plugin does not support raise()
+QWARN  : ConfigurationTests::importPreviewSupportsCancelAndImportWithoutActivation() This plugin does not support propagateSizeHints()
+QWARN  : ConfigurationTests::importPreviewSupportsCancelAndImportWithoutActivation() This plugin does not support raise()
+QWARN  : ConfigurationTests::importPreviewSupportsCancelAndImportWithoutActivation() This plugin does not support propagateSizeHints()
+PASS   : ConfigurationTests::importPreviewSupportsCancelAndImportWithoutActivation()
+PASS   : ConfigurationTests::firstRunHasVisibleImportAndNoUnusableRuntimeControls()
+PASS   : ConfigurationTests::browsingDoesNotActivateWithoutExplicitUse()
+PASS   : ConfigurationTests::v1DisablesGazeAndPauseDisablesPlayback()
+PASS   : ConfigurationTests::loadingOptionsDoesNotWriteBackOrOverwriteAnotherPet()
+PASS   : ConfigurationTests::movedEntriesHaveARecoverableLibraryRoute()
+PASS   : ConfigurationTests::closeCanHideOrRequestQuit()
+PASS   : ConfigurationTests::perPetSettingsPersistIndependently()
+PASS   : ConfigurationTests::malformedSettingsFallBackToSupportedValues()
+PASS   : ConfigurationTests::migrateOnlyThePreviousPetAndOnlyOnce()
+PASS   : ConfigurationTests::archiveAndRestoreKeepOriginalSourceAndExactImage()
+PASS   : ConfigurationTests::reimportingRemovedPetRestoresWithoutDuplicateCopies()
+PASS   : ConfigurationTests::invalidArchivePathsAndDamagedRestoreAreRejected()
+QWARN  : ConfigurationTests::runningHostOpensConsoleWhenItReceivesAnotherLaunch() This plugin does not support raise()
+QWARN  : ConfigurationTests::runningHostOpensConsoleWhenItReceivesAnotherLaunch() This plugin does not support raise()
+PASS   : ConfigurationTests::runningHostOpensConsoleWhenItReceivesAnotherLaunch()
+QWARN  : ConfigurationTests::explicitQuietStartupWithExistingPetStaysQuietUntilOpened() This plugin does not support setting window masks
+QWARN  : ConfigurationTests::explicitQuietStartupWithExistingPetStaysQuietUntilOpened() This plugin does not support raise()
+QINFO  : ConfigurationTests::explicitQuietStartupWithExistingPetStaysQuietUntilOpened() pet selected
+QWARN  : ConfigurationTests::explicitQuietStartupWithExistingPetStaysQuietUntilOpened() This plugin does not support raise()
+PASS   : ConfigurationTests::explicitQuietStartupWithExistingPetStaysQuietUntilOpened()
+PASS   : ConfigurationTests::cleanupTestCase()
+Totals: 21 passed, 0 failed, 0 skipped, 0 blacklisted, 854ms
+********* Finished testing of ConfigurationTests *********
+</system-out>
+	</testcase>
+</testsuite>

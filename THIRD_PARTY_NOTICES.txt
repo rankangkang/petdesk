@@ -1,4 +1,4 @@
-PetDesk 0.3.0 local prototype
+PetDesk 0.4.0 local prototype
 
 Qt 6.9.3 (Core, Gui, Widgets and the Cocoa, macOS style and WebP plugins)
 Copyright The Qt Company Ltd. and contributors.

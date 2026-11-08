@@ -25,6 +25,7 @@ public:
     QString currentActivity() const;
     void clampToScreen();
     bool hasPet() const { return !m_pet.atlas.isNull(); }
+    QImage previewImage() const { return hasPet() ? m_pet.atlas.copy(m_pet.frameRect(0, 0)) : QImage{}; }
     bool hasGaze() const { return m_pet.version == 2; }
     std::function<void(QPoint)> positionSaved;
     std::function<void(QPoint)> contextRequested;

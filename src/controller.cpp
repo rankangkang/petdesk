@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "uistyle.h"
 #include <QAction>
 #include <QApplication>
 #include <QDesktopServices>
@@ -38,6 +39,13 @@ Controller::Controller(const QString &dataRoot, bool migrateLegacy)
     m_pet.contextRequested = [this](QPoint) { showManager(); };
     m_pet.positionSaved = [this](QPoint point) { m_preferences.state().setValue("position", point); };
     m_pet.activityChanged = [this](const QString &activity) { m_manager->setActivity(activity); };
+    m_manager->previewRequested = [this](const QString &key) -> QImage {
+        if (key == m_currentKey && m_pet.hasPet()) return m_pet.previewImage();
+        try {
+            const auto pet = m_library.load(key);
+            return pet.atlas.copy(pet.frameRect(0, 0));
+        } catch (const std::exception &) { return {}; }
+    };
     connect(m_manager, &ManagerWindow::importRequested, this, [this] { importFolder(); });
     connect(m_manager, &ManagerWindow::directoryDropped, this, [this](const QString &path) { importDirectory(path); });
     connect(m_manager, &ManagerWindow::useRequested, this, [this](const QString &key) { activate(key); });
@@ -220,30 +228,58 @@ void Controller::restorePet(const QString &key) {
 }
 void Controller::importFolder() {
     showManager(); m_manager->showPage(0);
+#ifdef Q_OS_MACOS
+    // Qt checks the initial path before showing the native picker. A remembered
+    // protected or unavailable folder can block that check; start in Home and
+    // let the user navigate via the system picker instead.
+    const QString initialDirectory = QDir::homePath();
+#else
+    const QString initialDirectory = m_preferences.state().value("lastImportParent", QDir::homePath()).toString();
+#endif
     const QString directory = QFileDialog::getExistingDirectory(m_manager, QStringLiteral("选择自己的桌宠文件夹"),
-        m_preferences.state().value("lastImportParent", QDir::homePath()).toString(), QFileDialog::ShowDirsOnly);
+        initialDirectory, QFileDialog::ShowDirsOnly);
     if (!directory.isEmpty()) importDirectory(directory);
 }
 void Controller::importDirectory(const QString &directory) {
     showManager(); m_manager->showPage(0);
     try {
         const auto pet = readPetDirectory(directory);
-        QDialog preview(m_manager); preview.setWindowTitle(QStringLiteral("预览并导入桌宠")); preview.setMinimumWidth(440);
-        auto *layout = new QVBoxLayout(&preview); layout->setContentsMargins(24, 20, 24, 20); layout->setSpacing(16);
+        QDialog preview(m_manager);
+        preview.setObjectName("importPreview"); preview.setStyleSheet(ui::styleSheet());
+        preview.setWindowTitle(QStringLiteral("预览并导入桌宠")); preview.setMinimumWidth(500);
+        auto *layout = new QVBoxLayout(&preview); layout->setContentsMargins(26, 24, 26, 24); layout->setSpacing(15);
+        auto *eyebrow = label(QStringLiteral("A NEW COMPANION")); eyebrow->setObjectName("eyebrow"); layout->addWidget(eyebrow);
+        auto *title = label(QStringLiteral("认识你的新伙伴")); title->setObjectName("sectionTitle"); layout->addWidget(title);
         auto *row = new QHBoxLayout;
+        row->setSpacing(20);
+        auto *stage = new ui::PreviewStage; stage->setFixedWidth(170);
+        auto *stageLayout = new QVBoxLayout(stage); stageLayout->setContentsMargins(8, 8, 8, 8);
         auto *image = new QLabel;
-        image->setPixmap(QPixmap::fromImage(pet.atlas.copy(pet.frameRect(0, 0))).scaled(96, 104, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        row->addWidget(image);
+        image->setAlignment(Qt::AlignCenter); image->setAccessibleName(QStringLiteral("桌宠形象预览"));
+        const qreal dpr = preview.devicePixelRatioF();
+        QPixmap sprite = QPixmap::fromImage(pet.atlas.copy(pet.frameRect(0, 0))).scaled(
+            QSize(qRound(140 * dpr), qRound(152 * dpr)), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        sprite.setDevicePixelRatio(dpr); image->setPixmap(sprite);
+        stageLayout->addWidget(image, 0, Qt::AlignCenter); row->addWidget(stage);
         auto *info = new QVBoxLayout;
-        info->addWidget(label(pet.name));
-        info->addWidget(label(pet.version == 2 ? QStringLiteral("9 种动作 · 16 向注视") : QStringLiteral("9 种动作")));
-        if (!pet.description.isEmpty()) info->addWidget(label(pet.description));
+        info->addStretch();
+        auto *name = new ui::ElidedLabel; name->setObjectName("petName"); name->setFullText(pet.name); info->addWidget(name);
+        auto *capabilities = label(pet.version == 2 ? QStringLiteral("9 种动作 · 16 向注视") : QStringLiteral("9 种动作"));
+        capabilities->setObjectName("capabilities"); info->addWidget(capabilities);
+        if (!pet.description.isEmpty()) {
+            auto *description = label(pet.description); description->setObjectName("description");
+            description->setMaximumHeight(78); description->setToolTip(pet.description);
+            info->addWidget(description);
+        }
+        info->addStretch();
         row->addLayout(info, 1); layout->addLayout(row);
-        layout->addWidget(label(QStringLiteral("素材检查通过。导入后保存在本机，之后可在宠物库中随时使用。")));
+        auto *message = label(QStringLiteral("素材检查通过。导入后保存在本机，之后可在宠物库中随时使用。"));
+        message->setObjectName("helper"); layout->addWidget(message);
         auto *buttons = new QDialogButtonBox;
         auto *cancel = buttons->addButton(QStringLiteral("取消"), QDialogButtonBox::RejectRole);
         auto *onlyImport = buttons->addButton(QStringLiteral("仅导入"), QDialogButtonBox::ActionRole);
-        auto *use = buttons->addButton(QStringLiteral("导入并使用"), QDialogButtonBox::AcceptRole); use->setDefault(true);
+        auto *use = buttons->addButton(QStringLiteral("导入并使用"), QDialogButtonBox::AcceptRole);
+        use->setProperty("role", "primary"); use->setDefault(true);
         bool activateAfter = true;
         connect(cancel, &QPushButton::clicked, &preview, &QDialog::reject);
         connect(onlyImport, &QPushButton::clicked, &preview, [&preview, &activateAfter] { activateAfter = false; preview.accept(); });

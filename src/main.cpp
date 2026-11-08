@@ -1,5 +1,6 @@
 #include "controller.h"
 #include "petformat.h"
+#include "uistyle.h"
 #include <QApplication>
 #include <QCoreApplication>
 #include <QCommandLineParser>
@@ -36,10 +37,11 @@ int main(int argc, char *argv[]) {
     }
     QApplication app(argc, argv);
     restrictBundledPlugins();
+    petdesk::ui::applyApplicationStyle();
     app.setOrganizationName("cmkk");
     app.setOrganizationDomain("cmkk.dev");
     app.setApplicationName("PetDesk");
-    app.setApplicationVersion("0.3.0");
+    app.setApplicationVersion("0.4.0");
     app.setQuitOnLastWindowClosed(false);
     QCommandLineParser parser;
     parser.setApplicationDescription("PetDesk desktop pet host");
