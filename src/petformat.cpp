@@ -1,5 +1,6 @@
 #include "petformat.h"
 #include <QCryptographicHash>
+#include <QBuffer>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -52,7 +53,7 @@ QString safeAssetPath(const QString &root, const QString &relative) {
     if (relative.isEmpty() || QDir::isAbsolutePath(relative))
         fail(QStringLiteral("动画图路径必须位于所选宠物目录中。"));
     const QString path = QFileInfo(QDir(root).filePath(relative)).canonicalFilePath();
-    if (path.isEmpty() || !path.startsWith(root + QDir::separator()))
+    if (path.isEmpty() || !path.startsWith(root.endsWith('/') ? root : root + '/'))
         fail(QStringLiteral("动画图不存在，或路径指向了宠物目录之外。"));
     return path;
 }
@@ -76,7 +77,20 @@ PetEntry entryFromFolder(const QString &directory) {
     const auto metadata = readObject(QDir(directory).filePath("pet.json"));
     return {QFileInfo(directory).fileName(), metadata.value("displayName").toString(),
             metadata.value("description").toString(), directory,
-            QDir(directory).filePath("thumbnail.png")};
+            QDir(directory).filePath("thumbnail.png"), metadata.value("spriteVersionNumber").toInt()};
+}
+
+bool validKey(const QString &key) {
+    return QRegularExpression("^[a-f0-9]{64}$").match(key).hasMatch();
+}
+QString ownedFolder(const QString &root, const QString &key) {
+    if (!validKey(key)) fail(QStringLiteral("本地宠物标识无效。"));
+    const auto folder = QFileInfo(QDir(root).filePath(key));
+    const QString canonicalRoot = QFileInfo(root).canonicalFilePath();
+    if (!folder.isDir() || folder.isSymLink() || canonicalRoot.isEmpty() ||
+        !folder.canonicalFilePath().startsWith(canonicalRoot + '/'))
+        fail(QStringLiteral("本地宠物文件不存在，或已被移动。"));
+    return folder.absoluteFilePath();
 }
 }
 
@@ -133,10 +147,12 @@ PetData readPetDirectory(const QString &directory) {
         fail(QStringLiteral("没有找到最终动画图。请选择包含 pet.json 和动画图，或 pet_request.json 与 final 目录的宠物目录。"));
 
     pet.encoded = readBounded(pet.atlasPath, MaxImageBytes);
-    QImageReader reader(pet.atlasPath);
-    pet.format = QString::fromLatin1(reader.format()).toLower();
-    if (pet.format != "png" && pet.format != "webp")
-        fail(QStringLiteral("动画图需要是 PNG 或 WebP 文件。"));
+    QBuffer imageBuffer(&pet.encoded);
+    imageBuffer.open(QIODevice::ReadOnly);
+    if (pet.encoded.startsWith(QByteArray::fromHex("89504e470d0a1a0a"))) pet.format = "png";
+    else if (pet.encoded.startsWith("RIFF") && pet.encoded.mid(8, 4) == "WEBP") pet.format = "webp";
+    else fail(QStringLiteral("动画图需要是 PNG 或 WebP 文件。"));
+    QImageReader reader(&imageBuffer, pet.format.toLatin1());
     const QSize dimensions = reader.size();
     if (dimensions == QSize(1536, 1872)) pet.version = 1;
     else if (dimensions == QSize(1536, 2288)) pet.version = 2;
@@ -168,7 +184,7 @@ PetLibrary::PetLibrary(QString root) : m_root(std::move(root)) {}
 QVector<PetEntry> PetLibrary::entries() const {
     QVector<PetEntry> result;
     for (const auto &folder : QDir(m_root).entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-        if (!QRegularExpression("^[a-f0-9]{64}$").match(folder.fileName()).hasMatch()) continue;
+        if (!validKey(folder.fileName()) || folder.isSymLink()) continue;
         try { result.append(entryFromFolder(folder.absoluteFilePath())); }
         catch (const std::exception &) { /* Incomplete directories are not published imports. */ }
     }
@@ -188,6 +204,7 @@ PetEntry PetLibrary::importDirectory(const QString &directory) const {
         load(key); // A damaged previous copy must not be reported as a successful import.
         return entryFromFolder(target);
     }
+    if (QFileInfo::exists(QDir(archiveRoot()).filePath(key))) return restore(key);
     QTemporaryDir staging(QDir(m_root).filePath(".import-XXXXXX"));
     if (!staging.isValid()) fail(QStringLiteral("无法创建导入暂存目录。"));
     const QString asset = "spritesheet." + pet.format;
@@ -206,11 +223,37 @@ PetEntry PetLibrary::importDirectory(const QString &directory) const {
 }
 
 PetData PetLibrary::load(const QString &key) const {
-    if (!QRegularExpression("^[a-f0-9]{64}$").match(key).hasMatch())
-        fail(QStringLiteral("本地宠物标识无效。"));
-    auto pet = readPetDirectory(QDir(m_root).filePath(key));
+    auto pet = readPetDirectory(ownedFolder(m_root, key));
     pet.encoded.clear();
     pet.encoded.squeeze();
     return pet;
+}
+
+QString PetLibrary::archiveRoot() const {
+    const QString path = QDir(m_root).filePath(".removed");
+    if (QFileInfo(path).isSymLink()) fail(QStringLiteral("已移出目录不能是符号链接。"));
+    return path;
+}
+
+QVector<PetEntry> PetLibrary::archivedEntries() const {
+    return PetLibrary(archiveRoot()).entries();
+}
+
+void PetLibrary::archive(const QString &key) const {
+    const QString source = ownedFolder(m_root, key);
+    const QString target = QDir(archiveRoot()).filePath(key);
+    if (QFileInfo::exists(target)) fail(QStringLiteral("已移出列表中存在同一只宠物，请先恢复它。"));
+    if (!QDir().mkpath(archiveRoot()) || !QDir().rename(source, target))
+        fail(QStringLiteral("无法移出这只宠物，请检查本地目录权限。"));
+}
+
+PetEntry PetLibrary::restore(const QString &key) const {
+    const QString source = ownedFolder(archiveRoot(), key);
+    // Validate before publishing a removed entry back into the library.
+    readPetDirectory(source);
+    const QString target = QDir(m_root).filePath(key);
+    if (QFileInfo::exists(target)) fail(QStringLiteral("宠物库里已经有这只宠物，无需重复恢复。"));
+    if (!QDir().rename(source, target)) fail(QStringLiteral("无法恢复这只宠物，请检查本地目录权限。"));
+    return entryFromFolder(target);
 }
 }

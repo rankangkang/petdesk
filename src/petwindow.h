@@ -18,6 +18,7 @@ public:
     void setGazeEnabled(bool enabled);
     void setAutomaticEnabled(bool enabled);
     void setWalkingEnabled(bool enabled);
+    void setActivityPace(int pace);
     void setAutomaticSuspended(bool suspended);
     void play(int row);
     void playActivity(Activity activity);
@@ -61,7 +62,7 @@ private:
     QPoint m_pressGlobal, m_pressOrigin, m_lastDragGlobal, m_lastCursor;
     QPoint m_motionOrigin, m_motionTarget;
     double m_scale = 1.0;
-    int m_look = -1, m_motionDuration = 0;
+    int m_look = -1, m_motionDuration = 0, m_pace = 1;
     quint64 m_displayedSerial = 0;
     bool m_paused = false, m_gazeEnabled = false;
     bool m_automaticEnabled = true, m_walkingEnabled = false, m_automaticSuspended = false;

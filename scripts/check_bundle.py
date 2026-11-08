@@ -1,9 +1,14 @@
-"""Reject Homebrew runtime dependencies in a deployed macOS app."""
+"""Reject external SDK runtime dependencies in a deployed macOS app."""
 import subprocess
 import sys
+import configparser
 from pathlib import Path
 
 bundle = Path(sys.argv[1]).resolve()
+configuration = configparser.ConfigParser()
+configuration.read(bundle / 'Contents/Resources/qt.conf')
+if configuration.get('Paths', 'Plugins', fallback='') != 'PlugIns' or configuration.get('Paths', 'Prefix', fallback='') != '.':
+    raise SystemExit('Bundle must restrict Qt plugin discovery to Contents/PlugIns through qt.conf.')
 seen, failures = set(), []
 for candidate in bundle.rglob('*'):
     path = candidate.resolve()
@@ -21,8 +26,8 @@ for candidate in bundle.rglob('*'):
         library = line.strip().split(' (compatibility version', 1)[0]
         if library in own:  # LC_ID_DYLIB names do not load another library.
             continue
-        if '/opt/homebrew/' in library or '/usr/local/' in library:
+        if library.startswith('/') and not library.startswith(('/System/Library/', '/usr/lib/')):
             failures.append(f'{path.relative_to(bundle)}: {library}')
 if failures:
     raise SystemExit('\n'.join(failures))
-print(f'Bundle dependency check passed: {len(seen)} Mach-O files, no external Homebrew libraries.')
+print(f'Bundle dependency check passed: {len(seen)} Mach-O files, no external SDK libraries.')

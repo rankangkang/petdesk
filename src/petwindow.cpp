@@ -94,6 +94,11 @@ void PetWindow::setWalkingEnabled(bool enabled) {
         resetToIdle();
 }
 
+void PetWindow::setActivityPace(int pace) {
+    m_pace = std::clamp(pace, 0, 2);
+    scheduleAutomatic();
+}
+
 void PetWindow::setAutomaticSuspended(bool suspended) {
     m_automaticSuspended = suspended;
     m_automatic.stop();
@@ -243,8 +248,10 @@ void PetWindow::scheduleAutomatic(bool initial) {
     m_automatic.stop();
     if (!hasPet() || !isVisible() || m_paused || m_pressed || !m_playback.idle() ||
         !m_automaticEnabled || m_automaticSuspended) return;
+    const int low[] = {45'000, 18'000, 8'000};
+    const int high[] = {90'001, 34'001, 15'001};
     m_automatic.start(initial ? QRandomGenerator::global()->bounded(8'000, 12'001)
-                             : QRandomGenerator::global()->bounded(18'000, 34'001));
+                             : QRandomGenerator::global()->bounded(low[m_pace], high[m_pace]));
 }
 
 void PetWindow::runAutomatic() {

@@ -21,6 +21,7 @@ struct PetData {
 
 struct PetEntry {
     QString key, name, description, directory, thumbnail;
+    int version = 0;
 };
 
 // Accepts an individual Codex package, the Hu Tao project, or a create-pet run.
@@ -33,6 +34,10 @@ public:
     QVector<PetEntry> entries() const;
     PetEntry importDirectory(const QString &directory) const;
     PetData load(const QString &key) const;
+    QVector<PetEntry> archivedEntries() const;
+    void archive(const QString &key) const;
+    PetEntry restore(const QString &key) const;
+    QString archiveRoot() const;
     QString root() const { return m_root; }
 private:
     QString m_root;

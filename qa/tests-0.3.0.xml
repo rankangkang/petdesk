@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Darwin-c++"
+	tests="4"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname="Mac"
+	time="4"
+	timestamp="2026-11-08T17:01:23"
+	>
+	<testcase name="importer" classname="importer" time="0.858587" status="run">
+		<properties/>
+		<system-out>********* Start testing of ImporterTests *********
+Config: Using QtTest library 6.9.3, Qt 6.9.3 (arm64-little_endian-lp64 shared (dynamic) release build; by Apple LLVM 16.0.0 (clang-1600.0.26.3)), macos 27.0.1
+PASS   : ImporterTests::initTestCase()
+PASS   : ImporterTests::projectDirectoryPreservesNameAndPixels()
+PASS   : ImporterTests::standardWebpPackage()
+PASS   : ImporterTests::skillRunPrefersFinalV2OverIntermediateV1()
+PASS   : ImporterTests::legacyV1WithoutVersionMarker()
+PASS   : ImporterTests::rejectsVersionMismatchAndMissingRequiredFrames()
+PASS   : ImporterTests::rejectsPathsOutsideSelectedDirectory()
+PASS   : ImporterTests::rejectsMalformedMetadataAndWrongDigest()
+PASS   : ImporterTests::copiedLibrarySurvivesSourceRemovalAndDeduplicates()
+PASS   : ImporterTests::cleanupTestCase()
+Totals: 10 passed, 0 failed, 0 skipped, 0 blacklisted, 830ms
+********* Finished testing of ImporterTests *********
+</system-out>
+	</testcase>
+	<testcase name="behavior" classname="behavior" time="0.0404086" status="run">
+		<properties/>
+		<system-out>********* Start testing of BehaviorTests *********
+Config: Using QtTest library 6.9.3, Qt 6.9.3 (arm64-little_endian-lp64 shared (dynamic) release build; by Apple LLVM 16.0.0 (clang-1600.0.26.3)), macos 27.0.1
+PASS   : BehaviorTests::initTestCase()
+PASS   : BehaviorTests::focusedActivityFinishesInOrder()
+PASS   : BehaviorTests::allAuthoredRowsAndFramesAreUsedWithoutPadding()
+PASS   : BehaviorTests::explicitInputPreemptsAutomaticButAutomaticCannotPreemptInput()
+PASS   : BehaviorTests::draggingIsExclusiveAndReleaseClearsItsPriority()
+PASS   : BehaviorTests::explicitReplacementDoesNotQueueOldActivity()
+PASS   : BehaviorTests::invalidTimelineCannotReplaceCurrentState()
+PASS   : BehaviorTests::automaticPolicyHasCooldownNoImmediateRepeatsAndOptionalWalking()
+PASS   : BehaviorTests::allSixteenGazeDirectionsUseClockwiseViewerCoordinates()
+PASS   : BehaviorTests::walksStayInsideOffsetAndSmallScreens()
+PASS   : BehaviorTests::cleanupTestCase()
+Totals: 11 passed, 0 failed, 0 skipped, 0 blacklisted, 1ms
+********* Finishe...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="window_lifecycle" classname="window_lifecycle" time="2.86668" status="run">
+		<properties/>
+		<system-out>********* Start testing of WindowTests *********
+Config: Using QtTest library 6.9.3, Qt 6.9.3 (arm64-little_endian-lp64 shared (dynamic) release build; by Apple LLVM 16.0.0 (clang-1600.0.26.3)), macos 27.0.1
+PASS   : WindowTests::initTestCase()
+QWARN  : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt() This plugin does not support setting window masks
+QWARN  : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt() This plugin does not support raise()
+QINFO  : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt() activity: 认真琢磨 trigger: 2
+QWARN  : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt() This plugin does not support raise()
+PASS   : WindowTests::hidingCancelsTheOldPlanRatherThanResumingIt()
+QWARN  : WindowTests::pausingStopsAnActiveWalkAtItsCurrentPosition() This plugin does not support setting window masks
+QWARN  : WindowTests::pausingStopsAnActiveWalkAtItsCurrentPosition() This plugin does not support raise()
+QINFO  : WindowTests::pausingStopsAnActiveWalkAtItsCurre...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="configuration" classname="configuration" time="0.82673" status="run">
+		<properties/>
+		<system-out>********* Start testing of ConfigurationTests *********
+Config: Using QtTest library 6.9.3, Qt 6.9.3 (arm64-little_endian-lp64 shared (dynamic) release build; by Apple LLVM 16.0.0 (clang-1600.0.26.3)), macos 27.0.1
+PASS   : ConfigurationTests::initTestCase()
+QWARN  : ConfigurationTests::firstRunHasVisibleImportAndNoUnusableRuntimeControls() qt.qpa.fonts: Populating font family aliases took 83 ms. Replace uses of missing font family "Sans Serif" with one that exists to avoid this cost. 
+PASS   : ConfigurationTests::firstRunHasVisibleImportAndNoUnusableRuntimeControls()
+PASS   : ConfigurationTests::browsingDoesNotActivateWithoutExplicitUse()
+PASS   : ConfigurationTests::v1DisablesGazeAndPauseDisablesPlayback()
+PASS   : ConfigurationTests::loadingOptionsDoesNotWriteBackOrOverwriteAnotherPet()
+PASS   : ConfigurationTests::movedEntriesHaveARecoverableLibraryRoute()
+PASS   : ConfigurationTests::closeCanHideOrRequestQuit()
+PASS   : ConfigurationTests::perPetSettingsPersistIndependently()
+PASS   : ConfigurationTests:...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+</testsuite>

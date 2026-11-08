@@ -1,8 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 project_dir=$(cd "$(dirname "$0")/.." && pwd)
-qt_prefix=$(qtpaths --query QT_INSTALL_PREFIX)
-plugin_dir=$(qtpaths --query QT_INSTALL_PLUGINS)
+qt_package_dir=$(sed -n 's/^Qt6_DIR:PATH=//p' "$project_dir/build/CMakeCache.txt")
+qt_prefix=$(cd "$qt_package_dir/../../.." && pwd)
+plugin_dir=$("$qt_prefix/bin/qtpaths" --query QT_INSTALL_PLUGINS)
 bundle="$project_dir/dist/PetDesk.app"
 
 cmake --build "$project_dir/build" --parallel 4
@@ -19,8 +20,17 @@ ditto "$plugin_dir/styles/libqmacstyle.dylib" "$bundle/Contents/PlugIns/styles/l
   "-executable=$bundle/Contents/PlugIns/imageformats/libqwebp.dylib" \
   "-executable=$bundle/Contents/PlugIns/styles/libqmacstyle.dylib"
 mkdir -p "$bundle/Contents/Resources/licenses"
+cp "$project_dir/packaging/qt.conf" "$bundle/Contents/Resources/qt.conf"
 cp "$project_dir/THIRD_PARTY_NOTICES.txt" "$bundle/Contents/Resources/"
 ditto "$project_dir/LICENSES" "$bundle/Contents/Resources/licenses/Qt"
+if [ -d "$qt_prefix/sbom" ]; then
+  mkdir -p "$bundle/Contents/Resources/licenses/Qt/SBOM"
+  for module in qtbase qtimageformats; do
+    for notice in "$qt_prefix/sbom/$module-"*.spdx.json; do
+      if [ -f "$notice" ]; then cp "$notice" "$bundle/Contents/Resources/licenses/Qt/SBOM/"; fi
+    done
+  done
+fi
 
 # Keep the installed notices for dynamic Homebrew dependencies in the bundle.
 for formula in qt glib libpng harfbuzz graphite2 freetype md4c pcre2 gettext brotli webp jpeg-turbo libtiff zstd xz; do
@@ -36,6 +46,7 @@ for formula in qt glib libpng harfbuzz graphite2 freetype md4c pcre2 gettext bro
     done < <(find "$cellar" -type f \( -iname 'COPYING*' -o -iname 'LICENSE*' -o -iname 'LGPL*' \) 2>/dev/null)
   fi
 done
+python3 "$project_dir/scripts/thin-macos.py" "$bundle"
 python3 "$project_dir/scripts/check_bundle.py" "$bundle"
 codesign --force --deep --sign - "$bundle"
 codesign --verify --deep --strict "$bundle"
