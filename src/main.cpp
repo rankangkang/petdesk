@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("cmkk");
     app.setOrganizationDomain("cmkk.dev");
     app.setApplicationName("PetDesk");
-    app.setApplicationVersion("0.4.0");
+    app.setApplicationVersion(PETDESK_VERSION);
     app.setQuitOnLastWindowClosed(false);
     QCommandLineParser parser;
     parser.setApplicationDescription("PetDesk desktop pet host");

@@ -1,0 +1,24 @@
+{
+  "application": "PetDesk",
+  "version": "0.4.1",
+  "date": "2026-11-08",
+  "platform_tested": "macOS 27.0.1, Apple Silicon",
+  "qt_version": "6.9.3",
+  "checks": {
+    "automated_test_suites_passed": 4,
+    "mac_empty_library_and_preferences_visually_checked": true,
+    "mac_native_picker_and_import_preview_checked": true,
+    "mac_pet_library_and_runtime_settings_visually_checked": true,
+    "mac_v2_pet_imported_and_activated_in_isolated_profile": true,
+    "mac_switch_dependency_checked_in_isolated_profile": true,
+    "installed_app_opened_existing_pet_library": true,
+    "installed_app_import_picker_opens": true,
+    "bundle_dependency_check_passed": true,
+    "adhoc_code_signature_verified": true
+  },
+  "limits": [
+    "Windows and Linux have not been tested.",
+    "Native window decorations and file dialogs follow the operating system.",
+    "The macOS application is ad-hoc signed and is not notarized."
+  ]
+}

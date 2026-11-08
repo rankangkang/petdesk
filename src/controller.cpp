@@ -248,8 +248,7 @@ void Controller::importDirectory(const QString &directory) {
         preview.setObjectName("importPreview"); preview.setStyleSheet(ui::styleSheet());
         preview.setWindowTitle(QStringLiteral("预览并导入桌宠")); preview.setMinimumWidth(500);
         auto *layout = new QVBoxLayout(&preview); layout->setContentsMargins(26, 24, 26, 24); layout->setSpacing(15);
-        auto *eyebrow = label(QStringLiteral("A NEW COMPANION")); eyebrow->setObjectName("eyebrow"); layout->addWidget(eyebrow);
-        auto *title = label(QStringLiteral("认识你的新伙伴")); title->setObjectName("sectionTitle"); layout->addWidget(title);
+        auto *title = label(QStringLiteral("导入桌宠")); title->setObjectName("pageTitle"); layout->addWidget(title);
         auto *row = new QHBoxLayout;
         row->setSpacing(20);
         auto *stage = new ui::PreviewStage; stage->setFixedWidth(170);
