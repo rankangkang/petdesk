@@ -1,6 +1,6 @@
 {
   "application": "PetDesk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "date": "2026-11-08",
   "platform_tested": "macOS 27.0.1, Apple Silicon M4",
   "qt_version": "6.9.0",
@@ -26,19 +26,44 @@
     "copied_atlas_matches_original_bytes": true,
     "bundle_external_homebrew_dependency_references": 0,
     "running_app_external_homebrew_libraries": 0,
-    "adhoc_code_signature_verified": true
+    "adhoc_code_signature_verified": true,
+    "behavior_contract_test_cases_passed": 9,
+    "window_lifecycle_test_cases_passed": 4,
+    "total_test_cases_excluding_qttest_setup_cleanup": 21,
+    "all_57_standard_animation_frames_exercised_by_timeline_tests": true,
+    "all_16_gaze_sectors_checked_including_scale_and_cardinals": true,
+    "double_click_jump_visually_verified": true,
+    "directional_walk_visually_verified_in_gui": true,
+    "manual_walk_changes_saved_position": true,
+    "drag_release_jump_visually_verified": true,
+    "automatic_activities_observed_in_running_app_log": true,
+    "walking_and_automatic_checkboxes_toggled_in_gui": true,
+    "manager_accessibility_announces_current_activity": true,
+    "updated_app_and_settings_restore_verified": true,
+    "offscreen_window_tests_verify_pause_and_hide_cancel_pending_activity": true,
+    "bundle_version_matches_application_version": true,
+    "manual_activity_start_and_idle_return_verified_in_gui": true,
+    "pause_disables_playback_buttons_and_shows_paused_state_in_gui": true
   },
   "original_atlas_sha256": "2444042e3fd1d23cc47b72589592bf90eaa76d0829bd1e70da39839734cef64b",
   "final_settings": {
     "size_percent": 100,
     "paused": false,
-    "gaze_enabled": false
+    "gaze_enabled": true,
+    "automatic_activities_enabled": true,
+    "automatic_walking_enabled": false
   },
   "limitations": [
     "Windows, Linux and Intel Mac have not been tested.",
     "The app is locally ad-hoc signed, without Developer ID signing or Apple notarization.",
-    "All sixteen gaze directions were structurally validated, not individually exercised through the GUI.",
-    "Tray-native menu interaction was not separately exercised; the right-click management panel was verified.",
-    "CPU, memory and energy comparison testing was not resumed."
-  ]
+    "All sixteen gaze sectors have deterministic tests; each direction was not individually exercised through the GUI.",
+    "The updated tray-native menu was not separately exercised; the right-click management panel was verified.",
+    "CPU, memory and energy comparison testing was not resumed.",
+    "Climbing, hanging, falling and sleeping need additional authored artwork and are not provided by the standard Codex atlas."
+  ],
+  "reference_sources": {
+    "OpenPets": "c8dfeb661ee60e9c0f270316dd4e0f9c9158eb3d",
+    "WindowPet": "aba8d3ab94d30f4f5abf92b3f3ec7dff50d3326b",
+    "design_notes": "docs/action-system.md"
+  }
 }

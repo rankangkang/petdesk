@@ -27,7 +27,7 @@ private:
     QListWidget *m_list;
     QMenu m_menu;
     QSystemTrayIcon m_tray;
-    QAction *m_pause, *m_gaze, *m_visibility;
+    QAction *m_pause, *m_gaze, *m_visibility, *m_automatic, *m_walk;
     QList<QAction *> m_motionActions;
     QString m_currentKey;
 };

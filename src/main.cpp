@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("cmkk");
     app.setOrganizationDomain("cmkk.dev");
     app.setApplicationName("PetDesk");
-    app.setApplicationVersion("0.1.0");
+    app.setApplicationVersion("0.2.0");
     app.setQuitOnLastWindowClosed(false);
     const auto root = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
     if (!QDir().mkpath(root)) {

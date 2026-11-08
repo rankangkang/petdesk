@@ -11,12 +11,14 @@
 #include <QFileDialog>
 #include <QGuiApplication>
 #include <QHBoxLayout>
+#include <QHideEvent>
 #include <QLabel>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QPushButton>
 #include <QScreen>
 #include <QSignalBlocker>
+#include <QShowEvent>
 #include <QStyle>
 #include <QVBoxLayout>
 #include <stdexcept>
@@ -26,8 +28,17 @@ namespace {
 class ManagerDialog final : public QDialog {
 public:
     std::function<void(QString)> directoryDropped;
+    std::function<void(bool)> visibilityChanged;
     ManagerDialog() { setAcceptDrops(true); }
 protected:
+    void showEvent(QShowEvent *event) override {
+        QDialog::showEvent(event);
+        if (visibilityChanged) visibilityChanged(true);
+    }
+    void hideEvent(QHideEvent *event) override {
+        QDialog::hideEvent(event);
+        if (visibilityChanged) visibilityChanged(false);
+    }
     void dragEnterEvent(QDragEnterEvent *event) override {
         if (event->mimeData()->hasUrls() && event->mimeData()->urls().size() == 1 &&
             QFileInfo(event->mimeData()->urls().first().toLocalFile()).isDir())
@@ -51,7 +62,7 @@ Controller::Controller(const QString &dataRoot)
     m_menu.setWindowTitle(QStringLiteral("PetDesk 菜单"));
     m_menu.setAccessibleName(QStringLiteral("PetDesk 菜单"));
     m_manager->setWindowTitle(QStringLiteral("PetDesk · 桌面伙伴"));
-    m_manager->resize(480, 470);
+    m_manager->resize(540, 620);
     auto *layout = new QVBoxLayout(m_manager);
     layout->setContentsMargins(24, 20, 24, 20);
     layout->setSpacing(14);
@@ -64,6 +75,17 @@ Controller::Controller(const QString &dataRoot)
     auto *hint = new QLabel(QStringLiteral("选择或拖入一个宠物目录。导入后保存在本机，可离线使用。"));
     hint->setWordWrap(true);
     layout->addWidget(hint);
+    auto *status = new QLabel(QStringLiteral("现在：尚未选择宠物"));
+    status->setAccessibleName(QStringLiteral("当前活动"));
+    layout->addWidget(status);
+    m_pet.activityChanged = [status](const QString &activity) {
+        const QString text = QStringLiteral("现在：") + activity;
+        status->setText(text);
+        status->setAccessibleName(text);
+    };
+    static_cast<ManagerDialog *>(m_manager)->visibilityChanged = [this](bool visible) {
+        m_pet.setAutomaticSuspended(visible);
+    };
     m_list->setAccessibleName(QStringLiteral("本地宠物"));
     m_list->setIconSize(QSize(48, 52));
     layout->addWidget(m_list, 1);
@@ -102,10 +124,24 @@ Controller::Controller(const QString &dataRoot)
     });
     m_gaze = m_menu.addAction(QStringLiteral("看向鼠标"));
     m_gaze->setCheckable(true);
-    m_gaze->setChecked(m_settings.value("gaze", false).toBool());
+    m_gaze->setChecked(m_settings.value("gaze", true).toBool());
     connect(m_gaze, &QAction::toggled, this, [this](bool enabled) {
         m_pet.setGazeEnabled(enabled);
         m_settings.setValue("gaze", enabled);
+    });
+    m_automatic = m_menu.addAction(QStringLiteral("自由活动"));
+    m_automatic->setCheckable(true);
+    m_automatic->setChecked(m_settings.value("automatic", true).toBool());
+    connect(m_automatic, &QAction::toggled, this, [this](bool enabled) {
+        m_pet.setAutomaticEnabled(enabled);
+        m_settings.setValue("automatic", enabled);
+    });
+    m_walk = m_menu.addAction(QStringLiteral("允许自动散步"));
+    m_walk->setCheckable(true);
+    m_walk->setChecked(m_settings.value("walking", false).toBool());
+    connect(m_walk, &QAction::toggled, this, [this](bool enabled) {
+        m_pet.setWalkingEnabled(enabled);
+        m_settings.setValue("walking", enabled);
     });
     auto *sizeMenu = m_menu.addMenu(QStringLiteral("大小"));
     auto *sizeGroup = new QActionGroup(sizeMenu);
@@ -121,15 +157,20 @@ Controller::Controller(const QString &dataRoot)
         });
     }
     auto *motions = m_menu.addMenu(QStringLiteral("动作"));
-    const QStringList labels = {QStringLiteral("待机"), QStringLiteral("向右走"), QStringLiteral("向左走"),
-        QStringLiteral("挥手"), QStringLiteral("跳跃"), QStringLiteral("沮丧"), QStringLiteral("等待"),
-        QStringLiteral("思考"), QStringLiteral("检查")};
+    QStringList labels;
+    for (int row = 0; row < 9; ++row) labels.append(actionName(static_cast<Action>(row)));
     for (int row = 0; row < labels.size(); ++row)
         m_motionActions.append(motions->addAction(labels[row], this, [this, row] { m_pet.play(row); }));
+    auto *activities = m_menu.addMenu(QStringLiteral("小活动"));
+    for (int i = 0; i < static_cast<int>(Activity::Count); ++i) {
+        const auto activity = static_cast<Activity>(i);
+        m_motionActions.append(activities->addAction(activityName(activity), this,
+            [this, activity] { m_pet.playActivity(activity); }));
+    }
     m_menu.addSeparator();
     m_menu.addAction(QStringLiteral("关于 PetDesk"), this, [this] {
         QMessageBox::about(m_manager, QStringLiteral("关于 PetDesk"),
-            QStringLiteral("PetDesk 0.1.0\n\n完全本地的桌面伙伴。\n拖动移动，单击挥手，右键打开管理面板。\n\n素材导入后保存在本机，无需账号或其他应用。"));
+            QStringLiteral("PetDesk 0.2.0\n\n完全本地的桌面伙伴。\n单击挥手，双击跳跃，拖动移动，右键管理。\n自由活动会自动串起小动作，可选择允许散步。\n\n素材导入后保存在本机，无需账号或其他应用。"));
     });
     m_menu.addAction(QStringLiteral("退出 PetDesk"), this, [] {
         qInfo("quit requested via menu");
@@ -166,6 +207,34 @@ Controller::Controller(const QString &dataRoot)
     connect(m_gaze, &QAction::changed, gaze, [this, gaze] { gaze->setEnabled(m_gaze->isEnabled()); });
     options->addWidget(gaze);
     layout->addLayout(options);
+    auto *behaviorOptions = new QHBoxLayout;
+    auto *automatic = new QCheckBox(QStringLiteral("自由活动"));
+    automatic->setToolTip(QStringLiteral("闲下来每隔一会儿做一段小活动。打开管理面板时暂歇。"));
+    automatic->setChecked(m_automatic->isChecked());
+    connect(automatic, &QCheckBox::toggled, m_automatic, &QAction::setChecked);
+    connect(m_automatic, &QAction::toggled, automatic, &QCheckBox::setChecked);
+    behaviorOptions->addWidget(automatic);
+    auto *walk = new QCheckBox(QStringLiteral("允许自动散步"));
+    walk->setToolTip(QStringLiteral("自由活动时偶尔在当前屏幕内走一小段。"));
+    walk->setChecked(m_walk->isChecked());
+    connect(walk, &QCheckBox::toggled, m_walk, &QAction::setChecked);
+    connect(m_walk, &QAction::toggled, walk, &QCheckBox::setChecked);
+    behaviorOptions->addWidget(walk);
+    behaviorOptions->addStretch();
+    layout->addLayout(behaviorOptions);
+    auto *routine = new QHBoxLayout;
+    auto *activityChoice = new QComboBox;
+    activityChoice->setAccessibleName(QStringLiteral("宠物小活动"));
+    for (int i = 0; i < static_cast<int>(Activity::Count); ++i)
+        activityChoice->addItem(activityName(static_cast<Activity>(i)));
+    activityChoice->setCurrentIndex(static_cast<int>(Activity::Think));
+    routine->addWidget(activityChoice, 1);
+    auto *startActivity = new QPushButton(QStringLiteral("开始小活动"));
+    connect(startActivity, &QPushButton::clicked, this, [this, activityChoice] {
+        m_pet.playActivity(static_cast<Activity>(activityChoice->currentIndex()));
+    });
+    routine->addWidget(startActivity);
+    layout->addLayout(routine);
     auto *playback = new QHBoxLayout;
     auto *motion = new QComboBox;
     motion->setAccessibleName(QStringLiteral("宠物动作"));
@@ -185,6 +254,12 @@ Controller::Controller(const QString &dataRoot)
     connect(quit, &QPushButton::clicked, qApp, &QApplication::quit);
     playback->addWidget(quit);
     layout->addLayout(playback);
+    auto *gestureHint = new QLabel(QStringLiteral("单击挥手 · 双击跳跃 · 拖动移动 · 右键管理\n鼠标停下后，注视会自动回到待机。"));
+    gestureHint->setWordWrap(true);
+    layout->addWidget(gestureHint);
+    connect(m_pause, &QAction::changed, startActivity, [this, startActivity] {
+        startActivity->setEnabled(m_pet.hasPet() && !m_pause->isChecked());
+    });
     connect(&m_menu, &QMenu::aboutToShow, this, [this] {
         qInfo("pet menu opened");
         m_visibility->setText(m_pet.isVisible() ? QStringLiteral("隐藏宠物") : QStringLiteral("显示宠物"));
@@ -281,6 +356,8 @@ void Controller::activate(const QString &key) {
         m_pet.setPet(std::move(pet));
         m_pet.setPaused(m_pause->isChecked());
         m_pet.setGazeEnabled(m_gaze->isChecked() && m_pet.hasGaze());
+        m_pet.setAutomaticEnabled(m_automatic->isChecked());
+        m_pet.setWalkingEnabled(m_walk->isChecked());
         m_currentKey = key;
         m_settings.setValue("currentPet", key);
         m_pet.show();
