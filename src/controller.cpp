@@ -54,7 +54,6 @@ Controller::Controller(const QString &dataRoot, bool migrateLegacy)
     connect(m_manager, &ManagerWindow::petOptionsChanged, this, [this](PetOptions options) { applyOptions(options); });
     connect(m_manager, &ManagerWindow::appOptionsChanged, this, [this](AppOptions options) {
         m_preferences.saveApp(options);
-        m_manager->setNotice(QStringLiteral("应用偏好已保存。"));
     });
     connect(m_manager, &ManagerWindow::visibilityRequested, this, [this] { setPetVisible(!m_pet.isVisible()); });
     connect(m_manager, &ManagerWindow::positionRequested, this, [this](int screen) { moveToScreen(screen); });
@@ -166,7 +165,6 @@ void Controller::applyOptions(PetOptions options, bool force) {
     if (force || old.pace != options.pace) m_pet.setActivityPace(options.pace);
     m_preferences.state().setValue("position", m_pet.pos());
     syncCurrent();
-    if (!force) m_manager->setNotice(QStringLiteral("这只桌宠的设置已保存。"));
 }
 void Controller::activate(const QString &key, bool visible, bool interactive) {
     if (key.isEmpty()) return;
@@ -184,7 +182,7 @@ void Controller::activate(const QString &key, bool visible, bool interactive) {
         m_pet.clampToScreen();
         if (interactive) {
             refreshLibrary(); m_manager->selectPet(key); m_manager->showPage(1);
-            m_manager->setNotice(QStringLiteral("%1 已准备好。可以调整设置，或收起控制台回到桌面。").arg(m_currentEntry.name));
+            m_manager->setNotice({});
         }
         qInfo("pet selected");
     } catch (const std::exception &error) { showError(QString::fromUtf8(error.what())); }
@@ -204,7 +202,7 @@ void Controller::moveToScreen(int index) {
     m_pet.move(std::max(bounds.left(), bounds.right() - m_pet.width() - 32),
         std::max(bounds.top(), bounds.bottom() - m_pet.height() - 20));
     m_pet.clampToScreen(); m_preferences.state().setValue("position", m_pet.pos()); setPetVisible(true);
-    m_manager->setNotice(QStringLiteral("桌宠已移到所选屏幕右下角。"));
+    m_manager->setNotice(QStringLiteral("已移至右下角"));
 }
 void Controller::archivePet(const QString &key) {
     if (key.isEmpty()) return;
@@ -215,7 +213,7 @@ void Controller::archivePet(const QString &key) {
             m_preferences.state().remove("currentPet"); syncCurrent();
         }
         refreshLibrary();
-        m_manager->setNotice(QStringLiteral("已移出宠物库。可在「已移出」中恢复，原始素材未改动。"));
+        m_manager->setNotice(QStringLiteral("已移出，可在「已移出」中恢复"));
     } catch (const std::exception &error) { showError(QString::fromUtf8(error.what())); }
 }
 void Controller::restorePet(const QString &key) {
@@ -223,7 +221,7 @@ void Controller::restorePet(const QString &key) {
     try {
         const auto entry = m_library.restore(key);
         refreshLibrary(); m_manager->selectPet(entry.key); m_manager->showPage(0);
-        m_manager->setNotice(QStringLiteral("已恢复 %1，点击「使用这只桌宠」即可显示。").arg(entry.name));
+        m_manager->setNotice(QStringLiteral("已恢复 %1").arg(entry.name));
     } catch (const std::exception &error) { showError(QString::fromUtf8(error.what())); }
 }
 void Controller::importFolder() {
@@ -272,8 +270,6 @@ void Controller::importDirectory(const QString &directory) {
         }
         info->addStretch();
         row->addLayout(info, 1); layout->addLayout(row);
-        auto *message = label(QStringLiteral("素材检查通过。导入后保存在本机，之后可在宠物库中随时使用。"));
-        message->setObjectName("helper"); layout->addWidget(message);
         auto *buttons = new QDialogButtonBox;
         auto *cancel = buttons->addButton(QStringLiteral("取消"), QDialogButtonBox::RejectRole);
         auto *onlyImport = buttons->addButton(QStringLiteral("仅导入"), QDialogButtonBox::ActionRole);
@@ -289,7 +285,7 @@ void Controller::importDirectory(const QString &directory) {
         m_preferences.state().setValue("lastImportParent", QFileInfo(directory).absolutePath());
         refreshLibrary(); m_manager->selectPet(entry.key);
         if (activateAfter) activate(entry.key);
-        else m_manager->setNotice(QStringLiteral("%1 已导入。选择它并点击「使用这只桌宠」即可显示。").arg(entry.name));
+        else m_manager->setNotice(QStringLiteral("%1 已导入").arg(entry.name));
     } catch (const std::exception &error) { showError(QString::fromUtf8(error.what())); }
 }
 void Controller::showError(const QString &message) {

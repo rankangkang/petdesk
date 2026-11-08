@@ -132,11 +132,47 @@ private slots:
         ManagerWindow window;
         window.show();
         QVERIFY(window.findChild<QPushButton *>("firstImport")->isVisible());
-        QVERIFY(window.findChild<QPushButton *>("importPet")->isVisible());
+        QVERIFY(!window.findChild<QPushButton *>("importPet")->isVisible());
         QVERIFY(!window.findChild<QPushButton *>("toggleVisibility")->isEnabled());
+        window.setLibrary({entry("alpha")}, {}, {}, false);
+        QVERIFY(window.findChild<QPushButton *>("importPet")->isVisible());
+        QVERIFY(!window.findChild<QPushButton *>("firstImport")->isVisible());
         window.findChild<QPushButton *>("navigation1")->setChecked(true);
         QVERIFY(window.findChild<QPushButton *>("goToLibrary")->isVisible());
         QVERIFY(!window.findChild<QComboBox *>("petSize")->isVisible());
+    }
+    void successNoticeClearsWithoutHidingLaterErrors() {
+        ManagerWindow window; window.show();
+        auto *notice = window.findChild<QLabel *>("notice");
+        auto *timer = window.findChild<QTimer *>("noticeTimer");
+        QVERIFY(notice && timer); timer->setInterval(10);
+        window.setNotice(QStringLiteral("已导入"));
+        QVERIFY(notice->isVisible());
+        QTRY_VERIFY(notice->isHidden());
+        window.setNotice(QStringLiteral("已导入"));
+        window.setNotice(QStringLiteral("导入失败"), true);
+        QTest::qWait(50);
+        QVERIFY(notice->isVisible());
+        QCOMPARE(notice->text(), QStringLiteral("导入失败"));
+    }
+    void settingsControlsFitMinimumWindowWidth() {
+        ManagerWindow window; window.resize(800, 600);
+        window.setScreens({QStringLiteral("超宽显示器 · 外接主屏幕")});
+        window.setCurrentPet(entry("alpha"), {}, false, true);
+        window.showPage(1); window.show(); QCoreApplication::processEvents();
+        QComboBox *screen = nullptr;
+        for (auto *combo : window.findChildren<QComboBox *>())
+            if (combo->accessibleName() == QStringLiteral("目标屏幕")) screen = combo;
+        QVERIFY(screen);
+        QWidget *ancestor = screen;
+        while (ancestor && ancestor->objectName() != "pageScroll") ancestor = ancestor->parentWidget();
+        auto *page = qobject_cast<QScrollArea *>(ancestor); QVERIFY(page);
+        QCOMPARE(page->widget()->width(), page->viewport()->width());
+        QVERIFY(screen->mapTo(page->viewport(), screen->rect().bottomRight()).x() < page->viewport()->width());
+        for (const char *name : {"resetPosition", "action", "playAction", "activity", "playActivity"}) {
+            auto *control = window.findChild<QWidget *>(name); QVERIFY(control);
+            QVERIFY(control->mapTo(page->viewport(), control->rect().bottomRight()).x() < page->viewport()->width());
+        }
     }
     void browsingDoesNotActivateWithoutExplicitUse() {
         ManagerWindow window;
@@ -154,10 +190,12 @@ private slots:
         window.setCurrentPet(entry("legacy", 1), {}, true, true);
         auto *gaze = window.findChild<QCheckBox *>("gaze");
         QVERIFY(!gaze->isEnabled()); QVERIFY(!gaze->isChecked());
+        auto *hint = window.findChild<QLabel *>("gazeHint"); QVERIFY(hint && !hint->isHidden());
         QVERIFY(!window.findChild<QPushButton *>("playAction")->isEnabled());
         QVERIFY(!window.findChild<QPushButton *>("playActivity")->isEnabled());
         window.setCurrentPet(entry("modern"), {}, false, true);
         QVERIFY(gaze->isEnabled()); QVERIFY(gaze->isChecked());
+        QVERIFY(hint->isHidden());
         QVERIFY(window.findChild<QPushButton *>("playAction")->isEnabled());
     }
     void loadingOptionsDoesNotWriteBackOrOverwriteAnotherPet() {

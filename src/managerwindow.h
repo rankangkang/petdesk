@@ -13,6 +13,7 @@ class QLabel;
 class QPushButton;
 class QStackedWidget;
 class QTabWidget;
+class QTimer;
 
 namespace petdesk {
 namespace ui { class ElidedLabel; }
@@ -64,14 +65,15 @@ private:
     PetList *m_pets, *m_removed;
     QStackedWidget *m_pages, *m_libraryState, *m_runtimeState;
     QTabWidget *m_libraryTabs;
-    QLabel *m_count, *m_preview, *m_description, *m_capabilities, *m_selectedStatus;
+    QLabel *m_preview, *m_description, *m_capabilities;
     ui::ElidedLabel *m_name;
     QLabel *m_currentName, *m_gazeHint, *m_status, *m_notice;
     QLabel *m_footDot;
-    QPushButton *m_use, *m_archive, *m_reveal, *m_restore, *m_visibility;
+    QPushButton *m_import, *m_use, *m_archive, *m_reveal, *m_restore, *m_visibility;
     QPushButton *m_playAction, *m_playActivity;
     QComboBox *m_size, *m_pace, *m_screen, *m_action, *m_activity, *m_closeBehavior;
     QCheckBox *m_gaze, *m_automatic, *m_walk, *m_pause, *m_openConsole, *m_restorePet;
+    QTimer *m_noticeTimer;
     QHash<QString, PetEntry> m_entries;
     QHash<QString, QPixmap> m_previewCache;
     QString m_currentKey, m_currentNameText;

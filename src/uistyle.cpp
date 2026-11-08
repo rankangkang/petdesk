@@ -101,13 +101,12 @@ QPushButton[nav="true"]:hover { background: #eeeeef; }
 QPushButton[nav="true"]:checked { background: #e9e9ea; color: #202123; font-weight: 600; }
 QPushButton[nav="true"]:focus { border: 1px solid #aebbd7; }
 QLabel#pageTitle { color: #202123; font-size: 23px; font-weight: 700; }
-QLabel#pageSubtitle, QLabel#helper, QLabel#description { color: #6e6e70; font-size: 12px; }
+QLabel#helper, QLabel#description, QLabel#settingValue { color: #6e6e70; font-size: 12px; }
 QLabel#sectionTitle { color: #262626; font-size: 13px; font-weight: 600; }
-QLabel#sectionCaption, QLabel#libraryCount { color: #737373; font-size: 11px; }
+QLabel#sectionCaption { color: #737373; font-size: 11px; }
 QLabel#emptyTitle { color: #262626; font-size: 15px; font-weight: 600; }
 QLabel#settingTitle { color: #2f2f2f; font-size: 12px; font-weight: 600; }
 QLabel#petName { color: #202123; font-size: 18px; font-weight: 700; }
-QLabel#statusPill { color: #5d5d5d; background: #f0f0f0; border-radius: 6px; padding: 4px 8px; font-size: 11px; }
 QLabel#capabilities { color: #6e6e70; font-size: 11px; }
 QLabel#currentPetName { color: #555555; background: #f3f3f3; border-radius: 6px; padding: 7px 10px; font-size: 12px; }
 QFrame#sectionCard, QFrame#detailCard, QFrame#emptyCard,

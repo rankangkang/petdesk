@@ -22,6 +22,7 @@
 #include <QStyle>
 #include <QTabBar>
 #include <QTabWidget>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <algorithm>
 #include <array>
@@ -35,12 +36,8 @@ QLabel *text(const QString &value, const char *style = nullptr) {
     if (style) label->setObjectName(style);
     return label;
 }
-void heading(QVBoxLayout *layout, const QString &title, const QString &description) {
-    auto *header = new QWidget;
-    auto *content = new QVBoxLayout(header); content->setContentsMargins(0, 0, 0, 0); content->setSpacing(5);
-    content->addWidget(text(title, "pageTitle"));
-    content->addWidget(text(description, "pageSubtitle"));
-    layout->addWidget(header);
+void heading(QVBoxLayout *layout, const QString &title) {
+    layout->addWidget(text(title, "pageTitle"));
 }
 QPushButton *button(const QString &title, const char *name = nullptr, const char *role = nullptr) {
     auto *result = new QPushButton(title);
@@ -91,14 +88,17 @@ QWidget *group(const QString &title, QVBoxLayout *contents) {
     sectionLayout->addWidget(frame);
     return section;
 }
-QWidget *settingRow(const QString &title, const QString &hint, QWidget *control, QLabel **hintLabel = nullptr) {
+QWidget *settingRow(const QString &title, QWidget *control, QLabel **hintLabel = nullptr) {
     auto *container = new QWidget;
+    container->setMinimumHeight(42);
     auto *row = new QHBoxLayout(container);
-    row->setContentsMargins(0, 1, 0, 1); row->setSpacing(16);
+    row->setContentsMargins(0, 2, 0, 2); row->setSpacing(16);
     auto *labels = new QVBoxLayout; labels->setSpacing(3);
     labels->addWidget(text(title, "settingTitle"));
-    auto *detail = text(hint, "helper"); labels->addWidget(detail);
-    if (hintLabel) *hintLabel = detail;
+    if (hintLabel) {
+        auto *detail = text({}, "helper"); detail->hide(); labels->addWidget(detail);
+        *hintLabel = detail;
+    }
     row->addLayout(labels, 1); row->addWidget(control, 0, Qt::AlignVCenter);
     return container;
 }
@@ -147,6 +147,9 @@ ManagerWindow::ManagerWindow() {
     auto *workspaceLayout = new QVBoxLayout(workspace); workspaceLayout->setContentsMargins(0, 0, 0, 0); workspaceLayout->setSpacing(0);
     m_pages = new QStackedWidget; m_pages->setObjectName("pages"); workspaceLayout->addWidget(m_pages, 1);
     m_notice = text({}, "notice"); m_notice->hide();
+    m_noticeTimer = new QTimer(this); m_noticeTimer->setObjectName("noticeTimer");
+    m_noticeTimer->setSingleShot(true); m_noticeTimer->setInterval(5000);
+    connect(m_noticeTimer, &QTimer::timeout, m_notice, &QLabel::hide);
     auto *noticeArea = new QHBoxLayout; noticeArea->setContentsMargins(26, 0, 26, 9); noticeArea->addWidget(m_notice);
     workspaceLayout->addLayout(noticeArea);
     auto *bottom = new QFrame; bottom->setObjectName("bottomBar");
@@ -156,36 +159,32 @@ ManagerWindow::ManagerWindow() {
     m_visibility = button(QStringLiteral("显示桌宠"), "toggleVisibility");
     m_visibility->setIcon(ui::icon(ui::Icon::Eye, QColor("#555555")));
     connect(m_visibility, &QPushButton::clicked, this, &ManagerWindow::visibilityRequested); footer->addWidget(m_visibility);
-    auto *hide = button(QStringLiteral("收起"), "hideConsole", "quiet");
+    auto *hide = button(QStringLiteral("收起窗口"), "hideConsole", "quiet");
     hide->setIcon(ui::icon(ui::Icon::Hide, QColor("#666666")));
     connect(hide, &QPushButton::clicked, this, [this] { QMainWindow::hide(); }); footer->addWidget(hide);
-    auto *quit = button(QStringLiteral("退出"), "quit", "quiet");
+    auto *quit = button(QStringLiteral("退出应用"), "quit", "quiet");
     quit->setIcon(ui::icon(ui::Icon::Exit, QColor("#666666")));
     connect(quit, &QPushButton::clicked, this, &ManagerWindow::quitRequested); footer->addWidget(quit);
     workspaceLayout->addWidget(bottom); shell->addWidget(workspace, 1); setCentralWidget(central);
     connect(navigation, &QButtonGroup::idClicked, this, [this](int id) { showPage(id); });
 
     QVBoxLayout *libraryLayout; page(m_pages, libraryLayout);
-    heading(libraryLayout, QStringLiteral("宠物库"), QStringLiteral("导入、管理和切换桌面宠物。"));
-    auto *importRow = new QHBoxLayout; importRow->setSpacing(8);
-    m_count = text(QStringLiteral("还没有导入桌宠"), "sectionCaption"); m_count->setObjectName("libraryCount");
-    importRow->addWidget(m_count, 1);
-    auto *help = button(QStringLiteral("支持哪些目录？"), "importHelp", "quiet");
-    connect(help, &QPushButton::clicked, this, [this] { importHelp(); }); importRow->addWidget(help);
-    auto *import = button(QStringLiteral("导入桌宠"), "importPet", "primary");
-    import->setIcon(ui::icon(ui::Icon::Plus, Qt::white)); import->setDefault(true);
-    connect(import, &QPushButton::clicked, this, &ManagerWindow::importRequested); importRow->addWidget(import);
-    libraryLayout->addLayout(importRow);
+    auto *libraryHeader = new QHBoxLayout; libraryHeader->setSpacing(8);
+    libraryHeader->addWidget(text(QStringLiteral("宠物库"), "pageTitle"), 1);
+    auto *help = button(QStringLiteral("支持格式"), "importHelp", "quiet");
+    connect(help, &QPushButton::clicked, this, [this] { importHelp(); }); libraryHeader->addWidget(help);
+    m_import = button(QStringLiteral("导入桌宠"), "importPet", "primary");
+    m_import->setIcon(ui::icon(ui::Icon::Plus, Qt::white)); m_import->setDefault(true);
+    connect(m_import, &QPushButton::clicked, this, &ManagerWindow::importRequested); libraryHeader->addWidget(m_import);
+    libraryLayout->addLayout(libraryHeader);
     m_libraryState = new QStackedWidget;
     QVBoxLayout *emptyLayout; auto *empty = card("emptyCard", emptyLayout, 30);
     emptyLayout->addStretch();
     auto *emptyMark = new ui::Mark; emptyLayout->addWidget(emptyMark, 0, Qt::AlignHCenter);
     auto *emptyTitle = text(QStringLiteral("还没有桌宠"), "emptyTitle"); emptyTitle->setAlignment(Qt::AlignCenter); emptyLayout->addWidget(emptyTitle);
-    auto *emptyHint = text(QStringLiteral("选择或拖入桌宠文件夹以开始使用。"), "helper"); emptyHint->setAlignment(Qt::AlignCenter); emptyLayout->addWidget(emptyHint);
-    auto *firstImport = button(QStringLiteral("选择桌宠文件夹"), "firstImport", "primary");
+    auto *firstImport = button(QStringLiteral("导入桌宠"), "firstImport", "primary");
     firstImport->setIcon(ui::icon(ui::Icon::Plus, Qt::white));
     connect(firstImport, &QPushButton::clicked, this, &ManagerWindow::importRequested); emptyLayout->addWidget(firstImport, 0, Qt::AlignHCenter);
-    auto *emptyFormats = text(QStringLiteral("支持 Codex pet  ·  PNG / WebP"), "sectionCaption"); emptyFormats->setAlignment(Qt::AlignCenter); emptyLayout->addWidget(emptyFormats);
     emptyLayout->addStretch(); m_libraryState->addWidget(empty);
 
     m_libraryTabs = new QTabWidget; m_libraryTabs->setObjectName("libraryTabs");
@@ -193,31 +192,21 @@ ManagerWindow::ManagerWindow() {
     auto *installed = new QWidget;
     auto *installedLayout = new QHBoxLayout(installed); installedLayout->setContentsMargins(0, 8, 0, 0); installedLayout->setSpacing(15);
     QVBoxLayout *listLayout; auto *listCard = card("listCard", listLayout, 16); listCard->setMinimumWidth(200);
-    listLayout->addWidget(text(QStringLiteral("已导入"), "sectionTitle"));
-    listLayout->addWidget(text(QStringLiteral("选择桌宠查看详情"), "sectionCaption"));
     m_pets = new PetList; m_pets->setObjectName("petLibrary"); m_pets->setAccessibleName(QStringLiteral("已导入的桌宠"));
     listLayout->addWidget(m_pets, 1);
-    listLayout->addWidget(divider());
-    listLayout->addWidget(text(QStringLiteral("也可以把文件夹拖进窗口导入。"), "sectionCaption"));
     installedLayout->addWidget(listCard, 5);
 
     QVBoxLayout *detailLayout; auto *detailCard = card("detailCard", detailLayout, 17); detailCard->setMinimumWidth(240); detailLayout->setSpacing(8);
-    auto *detailTop = new QHBoxLayout;
-    detailTop->addWidget(text(QStringLiteral("桌宠详情"), "sectionTitle")); detailTop->addStretch();
-    detailLayout->addLayout(detailTop);
     auto *stage = new ui::PreviewStage;
     auto *stageLayout = new QVBoxLayout(stage); stageLayout->setContentsMargins(6, 6, 6, 6);
     m_preview = text({}); m_preview->setFixedSize(164, 178); m_preview->setAlignment(Qt::AlignCenter);
     m_preview->setAccessibleName(QStringLiteral("桌宠形象预览")); stageLayout->addWidget(m_preview, 0, Qt::AlignCenter);
     detailLayout->addWidget(stage, 1);
-    auto *identity = new QHBoxLayout;
     m_name = new ui::ElidedLabel; m_name->setObjectName("petName");
-    m_name->setFullText(QStringLiteral("选择一只桌宠")); identity->addWidget(m_name, 1);
-    m_selectedStatus = text({}, "statusPill"); identity->addWidget(m_selectedStatus, 0, Qt::AlignVCenter);
-    detailLayout->addLayout(identity);
+    m_name->setFullText(QStringLiteral("选择一只桌宠")); detailLayout->addWidget(m_name);
     m_capabilities = text({}, "capabilities"); detailLayout->addWidget(m_capabilities);
     m_description = text({}, "description"); m_description->setMaximumHeight(70); detailLayout->addWidget(m_description);
-    m_use = button(QStringLiteral("使用这只桌宠"), "usePet", "primary");
+    m_use = button(QStringLiteral("使用桌宠"), "usePet", "primary");
     m_use->setIcon(ui::icon(ui::Icon::Arrow, Qt::white));
     connect(m_use, &QPushButton::clicked, this, [this] { emit useRequested(m_pets->currentKey()); }); detailLayout->addWidget(m_use);
     auto *petButtons = new QHBoxLayout; petButtons->setSpacing(3);
@@ -244,52 +233,54 @@ ManagerWindow::ManagerWindow() {
     libraryLayout->addWidget(m_libraryState, 1);
 
     QVBoxLayout *runtimeLayout; page(m_pages, runtimeLayout);
-    heading(runtimeLayout, QStringLiteral("桌面设置"), QStringLiteral("调整当前桌宠的显示和行为。"));
+    heading(runtimeLayout, QStringLiteral("桌面设置"));
     m_runtimeState = new QStackedWidget;
     QVBoxLayout *noCurrentLayout; auto *noCurrent = card("emptyCard", noCurrentLayout, 30);
-    noCurrentLayout->addStretch(); noCurrentLayout->addWidget(text(QStringLiteral("先选择一只桌宠"), "emptyTitle"));
-    noCurrentLayout->addWidget(text(QStringLiteral("从宠物库选择伙伴后，就可以设置它的显示与互动方式。"), "helper"));
+    noCurrentLayout->addStretch(); noCurrentLayout->addWidget(text(QStringLiteral("尚未使用桌宠"), "emptyTitle"));
     auto *toLibrary = button(QStringLiteral("前往宠物库"), "goToLibrary", "primary");
     connect(toLibrary, &QPushButton::clicked, this, [this] { showPage(0); }); noCurrentLayout->addWidget(toLibrary, 0, Qt::AlignLeft); noCurrentLayout->addStretch();
     m_runtimeState->addWidget(noCurrent);
     auto *runtime = new QWidget; auto *runtimeBody = new QVBoxLayout(runtime); runtimeBody->setContentsMargins(0, 0, 0, 0); runtimeBody->setSpacing(14);
     m_currentName = text({}, "currentPetName"); runtimeBody->addWidget(m_currentName, 0, Qt::AlignLeft);
-    auto *displayLayout = new QVBoxLayout; displayLayout->setSpacing(12);
+    auto *displayLayout = new QVBoxLayout; displayLayout->setSpacing(6);
     m_size = new ui::ComboBox; m_size->setObjectName("petSize"); m_size->setAccessibleName(QStringLiteral("桌宠大小"));
     for (int size : {75, 100, 125, 150, 200}) m_size->addItem(QString::number(size) + '%', size);
     m_size->setMinimumWidth(110);
-    displayLayout->addWidget(settingRow(QStringLiteral("大小"), QStringLiteral("调整桌宠在桌面上的尺寸。"), m_size));
+    displayLayout->addWidget(settingRow(QStringLiteral("大小"), m_size));
     displayLayout->addWidget(divider());
     m_screen = new ui::ComboBox; m_screen->setAccessibleName(QStringLiteral("目标屏幕"));
-    m_screen->setMinimumWidth(140); m_screen->setMaximumWidth(220);
-    displayLayout->addWidget(settingRow(QStringLiteral("目标屏幕"), QStringLiteral("选择移动桌宠时使用的屏幕。"), m_screen));
-    displayLayout->addWidget(divider());
-    auto *reset = button(QStringLiteral("移到所选屏幕右下角"), "resetPosition");
+    m_screen->setMinimumWidth(140); m_screen->setMaximumWidth(200);
+    auto *positionControls = new QWidget; auto *positionRow = new QHBoxLayout(positionControls);
+    positionRow->setContentsMargins(0, 0, 0, 0); positionRow->setSpacing(8);
+    positionRow->addWidget(m_screen);
+    auto *reset = button(QStringLiteral("移至右下角"), "resetPosition");
+    positionRow->addWidget(reset);
     connect(reset, &QPushButton::clicked, this, [this] { emit positionRequested(m_screen->currentIndex()); });
-    displayLayout->addWidget(settingRow(QStringLiteral("找回位置"), QStringLiteral("将桌宠移回所选屏幕的可见区域。"), reset));
+    displayLayout->addWidget(settingRow(QStringLiteral("移动到屏幕"), positionControls));
     runtimeBody->addWidget(group(QStringLiteral("显示与位置"), displayLayout));
-    auto *behavior = new QVBoxLayout; behavior->setSpacing(12);
+    auto *behavior = new QVBoxLayout; behavior->setSpacing(6);
     m_gaze = new ui::Toggle(QStringLiteral("看向鼠标")); m_gaze->setObjectName("gaze");
-    behavior->addWidget(settingRow(QStringLiteral("看向鼠标"), QStringLiteral("跟随光标的方向，停下后回到待机。"), m_gaze, &m_gazeHint));
+    behavior->addWidget(settingRow(QStringLiteral("看向鼠标"), m_gaze, &m_gazeHint));
+    m_gazeHint->setObjectName("gazeHint");
     behavior->addWidget(divider());
-    m_automatic = new ui::Toggle(QStringLiteral("自由活动")); m_automatic->setObjectName("automatic");
-    behavior->addWidget(settingRow(QStringLiteral("自由活动"), QStringLiteral("空闲时自动播放动作。"), m_automatic));
+    m_automatic = new ui::Toggle(QStringLiteral("自动播放动作")); m_automatic->setObjectName("automatic");
+    behavior->addWidget(settingRow(QStringLiteral("自动播放动作"), m_automatic));
     behavior->addWidget(divider());
-    m_walk = new ui::Toggle(QStringLiteral("允许自动散步")); m_walk->setObjectName("walking");
-    behavior->addWidget(settingRow(QStringLiteral("允许自动散步"), QStringLiteral("偶尔在当前屏幕上走动。"), m_walk));
+    m_walk = new ui::Toggle(QStringLiteral("自动散步")); m_walk->setObjectName("walking");
+    behavior->addWidget(settingRow(QStringLiteral("自动散步"), m_walk));
     behavior->addWidget(divider());
     m_pace = new ui::ComboBox; m_pace->setObjectName("pace"); m_pace->setAccessibleName(QStringLiteral("活动频率"));
     m_pace->addItems({QStringLiteral("安静 · 偶尔活动"), QStringLiteral("适中 · 默认"), QStringLiteral("活泼 · 更常活动")});
-    behavior->addWidget(settingRow(QStringLiteral("活动频率"), QStringLiteral("调整自动活动的间隔。"), m_pace));
+    behavior->addWidget(settingRow(QStringLiteral("活动频率"), m_pace));
     runtimeBody->addWidget(group(QStringLiteral("互动与活动"), behavior));
-    auto *previewLayout = new QVBoxLayout; previewLayout->setSpacing(10);
+    auto *previewLayout = new QVBoxLayout; previewLayout->setSpacing(6);
     auto *actionControls = new QWidget; auto *actionRow = new QHBoxLayout(actionControls);
     actionRow->setContentsMargins(0, 0, 0, 0); actionRow->setSpacing(8);
     m_action = new ui::ComboBox; m_action->setObjectName("action"); m_action->setAccessibleName(QStringLiteral("基础动作"));
     for (int row = 0; row < 9; ++row) m_action->addItem(actionName(static_cast<Action>(row)));
     m_action->setMinimumWidth(125); actionRow->addWidget(m_action); m_playAction = button(QStringLiteral("播放"), "playAction");
     connect(m_playAction, &QPushButton::clicked, this, [this] { emit actionRequested(m_action->currentIndex()); }); actionRow->addWidget(m_playAction);
-    previewLayout->addWidget(settingRow(QStringLiteral("基础动作"), QStringLiteral("播放单个动作。"), actionControls));
+    previewLayout->addWidget(settingRow(QStringLiteral("基础动作"), actionControls));
     previewLayout->addWidget(divider());
     auto *activityControls = new QWidget; auto *activityRow = new QHBoxLayout(activityControls);
     activityRow->setContentsMargins(0, 0, 0, 0); activityRow->setSpacing(8);
@@ -297,51 +288,60 @@ ManagerWindow::ManagerWindow() {
     for (int id = 0; id < static_cast<int>(Activity::Count); ++id) m_activity->addItem(activityName(static_cast<Activity>(id)));
     m_activity->setMinimumWidth(125); activityRow->addWidget(m_activity); m_playActivity = button(QStringLiteral("播放"), "playActivity");
     connect(m_playActivity, &QPushButton::clicked, this, [this] { emit activityRequested(m_activity->currentIndex()); }); activityRow->addWidget(m_playActivity);
-    previewLayout->addWidget(settingRow(QStringLiteral("连续活动"), QStringLiteral("播放一组连续动作。"), activityControls));
+    previewLayout->addWidget(settingRow(QStringLiteral("连续活动"), activityControls));
     previewLayout->addWidget(divider());
     m_pause = new ui::Toggle(QStringLiteral("暂停所有动画")); m_pause->setObjectName("pause");
-    previewLayout->addWidget(settingRow(QStringLiteral("暂停所有动画"), QStringLiteral("暂停桌宠的动作与活动。"), m_pause));
+    previewLayout->addWidget(settingRow(QStringLiteral("暂停所有动画"), m_pause));
     connect(m_pause, &QCheckBox::toggled, this, [this](bool checked) { if (!m_syncing) emit pauseRequested(checked); });
-    previewLayout->addWidget(text(QStringLiteral("在桌面单击挥手、双击跳跃；按住拖动移动，右键回到控制台。"), "helper"));
-    runtimeBody->addWidget(group(QStringLiteral("试试动作"), previewLayout)); runtimeBody->addStretch();
+    runtimeBody->addWidget(group(QStringLiteral("动作与动画"), previewLayout)); runtimeBody->addStretch();
     m_runtimeState->addWidget(runtime); runtimeLayout->addWidget(m_runtimeState, 1);
     for (auto *check : {m_gaze, m_automatic, m_walk}) connect(check, &QCheckBox::toggled, this, [this] { emitPetOptions(); });
     connect(m_size, &QComboBox::currentIndexChanged, this, [this] { emitPetOptions(); });
     connect(m_pace, &QComboBox::currentIndexChanged, this, [this] { emitPetOptions(); });
 
     QVBoxLayout *preferencesLayout; page(m_pages, preferencesLayout);
-    heading(preferencesLayout, QStringLiteral("应用偏好"), QStringLiteral("管理启动、关闭和本地数据。"));
-    auto *startup = new QVBoxLayout; startup->setSpacing(12);
+    heading(preferencesLayout, QStringLiteral("应用偏好"));
+    auto *startup = new QVBoxLayout; startup->setSpacing(6);
     m_openConsole = new ui::Toggle(QStringLiteral("启动时打开控制台")); m_openConsole->setObjectName("openConsole");
-    startup->addWidget(settingRow(QStringLiteral("启动时打开控制台"), QStringLiteral("打开 PetDesk 时显示管理窗口。"), m_openConsole));
+    startup->addWidget(settingRow(QStringLiteral("打开控制台"), m_openConsole));
     startup->addWidget(divider());
     m_restorePet = new ui::Toggle(QStringLiteral("启动时恢复上次的桌宠")); m_restorePet->setObjectName("restoreLastPet");
-    startup->addWidget(settingRow(QStringLiteral("恢复上次的桌宠"), QStringLiteral("打开应用时自动显示上次的桌宠。"), m_restorePet));
+    startup->addWidget(settingRow(QStringLiteral("恢复上次的桌宠"), m_restorePet));
     preferencesLayout->addWidget(group(QStringLiteral("启动时"), startup));
-    auto *closing = new QVBoxLayout; closing->setSpacing(10);
+    auto *closing = new QVBoxLayout; closing->setSpacing(6);
     m_closeBehavior = new ui::ComboBox; m_closeBehavior->setObjectName("closeBehavior"); m_closeBehavior->setAccessibleName(QStringLiteral("关闭控制台时"));
     m_closeBehavior->addItems({QStringLiteral("桌宠继续运行"), QStringLiteral("退出 PetDesk")});
-    closing->addWidget(settingRow(QStringLiteral("关闭控制台时"), QStringLiteral("再次打开应用或右键桌宠可返回控制台。"), m_closeBehavior));
+    closing->addWidget(settingRow(QStringLiteral("关闭控制台时"), m_closeBehavior));
     preferencesLayout->addWidget(group(QStringLiteral("关闭与常驻"), closing));
-    auto *storage = new QVBoxLayout; storage->setSpacing(10);
-    auto *data = button(QStringLiteral("查看本地数据"), "openDataFolder");
+    auto *storage = new QVBoxLayout; storage->setSpacing(6);
+    auto *data = button(QStringLiteral("打开文件夹"), "openDataFolder");
     data->setIcon(ui::icon(ui::Icon::Folder, QColor("#555555")));
     connect(data, &QPushButton::clicked, this, &ManagerWindow::dataFolderRequested);
-    storage->addWidget(settingRow(QStringLiteral("桌宠和设置"), QStringLiteral("导入的素材和设置保存在本机。"), data));
+    storage->addWidget(settingRow(QStringLiteral("桌宠和设置"), data));
     preferencesLayout->addWidget(group(QStringLiteral("本地数据"), storage)); preferencesLayout->addStretch();
     for (auto *check : {m_openConsole, m_restorePet}) connect(check, &QCheckBox::toggled, this, [this] { emitAppOptions(); });
     connect(m_closeBehavior, &QComboBox::currentIndexChanged, this, [this] { emitAppOptions(); });
 
     QVBoxLayout *about; page(m_pages, about);
-    heading(about, QStringLiteral("关于 PetDesk"), QStringLiteral("桌面宠物管理工具。"));
-    QVBoxLayout *aboutContents; auto *aboutCard = card("aboutCard", aboutContents, 24);
-    aboutContents->addWidget(new ui::Mark, 0, Qt::AlignLeft);
-    aboutContents->addWidget(text("PetDesk " + QCoreApplication::applicationVersion(), "sectionTitle"));
-    aboutContents->addWidget(text(QStringLiteral("从本地导入、管理和切换桌宠，按每只伙伴保存互动设置。"), "helper"));
-    aboutContents->addWidget(text(QStringLiteral("支持 Codex v1/v2 素材。v2 还包含 16 向注视。"), "helper"));
-    auto *repo = button(QStringLiteral("查看开源仓库"), "repository"); repo->setIcon(ui::icon(ui::Icon::Arrow, QColor("#555555")));
-    connect(repo, &QPushButton::clicked, this, &ManagerWindow::repositoryRequested); aboutContents->addWidget(repo, 0, Qt::AlignLeft);
-    about->addWidget(aboutCard); about->addStretch();
+    heading(about, QStringLiteral("关于 PetDesk"));
+    auto *aboutContents = new QVBoxLayout; aboutContents->setSpacing(6);
+    aboutContents->addWidget(settingRow(QStringLiteral("版本"), text(QCoreApplication::applicationVersion(), "settingValue")));
+    aboutContents->addWidget(divider());
+    aboutContents->addWidget(settingRow(QStringLiteral("支持的素材"), text(QStringLiteral("Codex pet v1 / v2"), "settingValue")));
+    aboutContents->addWidget(divider());
+    auto *repo = button(QStringLiteral("打开仓库"), "repository"); repo->setIcon(ui::icon(ui::Icon::Arrow, QColor("#555555")));
+    connect(repo, &QPushButton::clicked, this, &ManagerWindow::repositoryRequested);
+    aboutContents->addWidget(settingRow(QStringLiteral("开源仓库"), repo));
+    about->addWidget(group(QStringLiteral("应用信息"), aboutContents));
+    auto *gestures = new QVBoxLayout; gestures->setSpacing(6);
+    gestures->addWidget(settingRow(QStringLiteral("单击"), text(QStringLiteral("挥手"), "settingValue")));
+    gestures->addWidget(divider());
+    gestures->addWidget(settingRow(QStringLiteral("双击"), text(QStringLiteral("跳跃"), "settingValue")));
+    gestures->addWidget(divider());
+    gestures->addWidget(settingRow(QStringLiteral("拖动"), text(QStringLiteral("移动"), "settingValue")));
+    gestures->addWidget(divider());
+    gestures->addWidget(settingRow(QStringLiteral("右键"), text(QStringLiteral("打开控制台"), "settingValue")));
+    about->addWidget(group(QStringLiteral("桌面交互"), gestures)); about->addStretch();
     showPage(0);
     setLibrary({}, {}, {}, false); setCurrentPet({}, {}, false, false); setAppOptions({});
 }
@@ -355,8 +355,8 @@ void ManagerWindow::setLibrary(const QVector<PetEntry> &entries, const QVector<P
     m_pets->setEntries(entries, currentKey, petVisible);
     m_removed->setEntries(removed);
     m_restore->setEnabled(!m_removed->currentKey().isEmpty());
-    m_count->setText(QStringLiteral("%1 只桌宠 · %2 只正在显示").arg(entries.size()).arg(petVisible ? 1 : 0));
-    m_libraryState->setCurrentIndex(entries.isEmpty() && removed.isEmpty() ? 0 : 1);
+    const bool empty = entries.isEmpty() && removed.isEmpty();
+    m_libraryState->setCurrentIndex(empty ? 0 : 1); m_import->setVisible(!empty);
     m_libraryTabs->setTabText(1, QStringLiteral("已移出 (%1)").arg(removed.size()));
     selectPet(m_entries.contains(previous) ? previous : currentKey);
     if (entries.isEmpty() && !removed.isEmpty()) m_libraryTabs->setCurrentIndex(1);
@@ -372,7 +372,6 @@ void ManagerWindow::updateSelection() {
     const bool valid = found != m_entries.cend();
     for (auto *widget : {m_use, m_archive, m_reveal}) widget->setEnabled(valid);
     m_preview->clear();
-    m_selectedStatus->setVisible(valid);
     if (!valid) {
         m_name->setFullText(QStringLiteral("还没有桌宠")); m_capabilities->clear(); m_description->clear();
         m_description->hide(); return;
@@ -401,18 +400,18 @@ void ManagerWindow::updateSelection() {
     m_description->setToolTip(entry.description);
     m_description->setVisible(!entry.description.isEmpty());
     const bool current = entry.key == m_currentKey;
-    m_selectedStatus->setText(current ? (m_petVisible ? QStringLiteral("正在显示") : QStringLiteral("已隐藏")) : QStringLiteral("已导入"));
-    m_use->setText(current && m_petVisible ? QStringLiteral("桌面设置") : QStringLiteral("使用这只桌宠"));
+    m_use->setText(current && m_petVisible ? QStringLiteral("桌面设置") : QStringLiteral("使用桌宠"));
 }
 
 void ManagerWindow::setCurrentPet(const PetEntry &entry, PetOptions options, bool paused, bool visible) {
     const QScopedValueRollback<bool> blocker(m_syncing, true);
     m_hasPet = !entry.key.isEmpty(); m_currentKey = entry.key; m_currentNameText = entry.name; m_petVisible = visible;
     m_runtimeState->setCurrentIndex(m_hasPet ? 1 : 0);
-    m_currentName->setText(QStringLiteral("正在设置：") + entry.name);
+    m_currentName->setText(QStringLiteral("当前桌宠：") + entry.name);
     m_size->setCurrentIndex(std::max(0, m_size->findData(options.size)));
     m_gaze->setChecked(options.gaze && entry.version == 2); m_gaze->setEnabled(entry.version == 2);
-    m_gazeHint->setText(entry.version == 2 ? QStringLiteral("鼠标停下后会回到正常待机。") : QStringLiteral("这只桌宠的素材没有注视姿势，其他动作可以正常使用。"));
+    m_gazeHint->setText(QStringLiteral("该桌宠不支持注视"));
+    m_gazeHint->setVisible(m_hasPet && entry.version != 2);
     m_automatic->setChecked(options.automatic); m_walk->setChecked(options.walking);
     m_walk->setEnabled(options.automatic); m_pace->setEnabled(options.automatic); m_pace->setCurrentIndex(options.pace);
     m_pause->setChecked(paused); m_playAction->setEnabled(!paused); m_playActivity->setEnabled(!paused);
@@ -438,10 +437,12 @@ void ManagerWindow::setActivity(const QString &activity) {
     m_footDot->style()->unpolish(m_footDot); m_footDot->style()->polish(m_footDot);
 }
 void ManagerWindow::setNotice(const QString &value, bool error) {
+    m_noticeTimer->stop();
     m_notice->setText(value);
     m_notice->setProperty("severity", error ? "error" : "success");
     m_notice->style()->unpolish(m_notice); m_notice->style()->polish(m_notice);
     m_notice->setVisible(!value.isEmpty());
+    if (!error && !value.isEmpty()) m_noticeTimer->start();
 }
 void ManagerWindow::emitPetOptions() {
     if (m_syncing || !m_hasPet) return;
@@ -477,6 +478,6 @@ void ManagerWindow::dropEvent(QDropEvent *event) {
 }
 void ManagerWindow::importHelp() {
     QMessageBox::information(this, QStringLiteral("选择哪个文件夹？"),
-        QStringLiteral("选择已经保存好的 Codex pet 文件夹。\n\n支持包含宠物说明和 PNG/WebP 动画图的目录，也支持 create-pet 工作目录或其 final 目录。\n\n请先解压下载的压缩包，再选择里面的宠物文件夹。导入前会显示预览，并检查素材是否完整。\n\nv1 素材有 9 种动作；v2 还包含 16 向注视。"));
+        QStringLiteral("选择 Codex pet 文件夹，也可以将文件夹拖入窗口。\n\n支持包含 PNG/WebP 动画图的宠物目录、create-pet 工作目录或其 final 目录。请先解压下载的压缩包。\n\nv1 素材有 9 种动作；v2 还包含 16 向注视。"));
 }
 }
