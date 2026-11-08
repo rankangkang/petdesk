@@ -15,10 +15,11 @@
     "bundle_dependency_check_passed": true,
     "adhoc_code_signature_verified": true,
     "installed_app_opened_existing_pet_library": true,
-    "installed_native_status_entry_created": true
+    "installed_native_status_entry_created": true,
+    "user_reported_macos_status_click_opened_menu": true
   },
   "limits": [
-    "The automation interface could not locate the macOS status item for a physical click; manual click confirmation remains outstanding.",
+    "The macOS status-menu click was confirmed by the user; the automation interface could not locate the status item.",
     "Windows and Linux have not been tested on those operating systems.",
     "The macOS application is ad-hoc signed and is not notarized."
   ]
