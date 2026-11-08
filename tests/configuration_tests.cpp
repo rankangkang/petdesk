@@ -15,6 +15,7 @@
 #include <QRadioButton>
 #include <QScrollArea>
 #include <QSignalSpy>
+#include <QSlider>
 #include <QStackedWidget>
 #include <QTemporaryDir>
 #include <QTimer>
@@ -139,7 +140,7 @@ private slots:
         QVERIFY(!window.findChild<QPushButton *>("firstImport")->isVisible());
         window.findChild<QPushButton *>("navigation1")->setChecked(true);
         QVERIFY(window.findChild<QPushButton *>("goToLibrary")->isVisible());
-        QVERIFY(!window.findChild<QComboBox *>("petSize")->isVisible());
+        QVERIFY(!window.findChild<QSlider *>("petSize")->isVisible());
     }
     void successNoticeClearsWithoutHidingLaterErrors() {
         ManagerWindow window; window.show();
@@ -185,6 +186,18 @@ private slots:
         QCOMPARE(use.size(), 1);
         QCOMPARE(use.at(0).at(0).toString(), QString("beta"));
     }
+    void builtInPetsCannotBeRemovedFromLibrary() {
+        ManagerWindow window;
+        auto builtIn = entry("bundled"); builtIn.builtIn = true;
+        window.setLibrary({builtIn, entry("ordinary")}, {}, {}, false);
+        auto *archive = window.findChild<QPushButton *>("archivePet"); QVERIFY(archive);
+        window.selectPet("bundled");
+        QVERIFY(!archive->isEnabled());
+        QCOMPARE(archive->text(), QStringLiteral("内置桌宠"));
+        window.selectPet("ordinary");
+        QVERIFY(archive->isEnabled());
+        QCOMPARE(archive->text(), QStringLiteral("移出宠物库"));
+    }
     void v1DisablesGazeAndPauseDisablesPlayback() {
         ManagerWindow window;
         window.setCurrentPet(entry("legacy", 1), {}, true, true);
@@ -204,11 +217,13 @@ private slots:
         window.setCurrentPet(entry("alpha"), {150, false, false, true, 0}, false, true);
         QCOMPARE(changed.size(), 0);
         QVERIFY(!window.findChild<QCheckBox *>("walking")->isEnabled());
-        auto *size = window.findChild<QComboBox *>("petSize");
-        size->setCurrentIndex(size->findData(125));
+        auto *size = window.findChild<QSlider *>("petSize");
+        QCOMPARE(size->minimum(), 50); QCOMPARE(size->maximum(), 200);
+        size->setValue(50);
         QCOMPARE(changed.size(), 1);
         const auto options = qvariant_cast<PetOptions>(changed.at(0).at(0));
-        QCOMPARE(options.size, 125); QVERIFY(!options.gaze); QVERIFY(!options.automatic);
+        QCOMPARE(options.size, 50); QVERIFY(!options.gaze); QVERIFY(!options.automatic);
+        QCOMPARE(window.findChild<QLabel *>("petSizeValue")->text(), QString("50%"));
         QVERIFY(options.walking); QCOMPARE(options.pace, 0);
     }
     void movedEntriesHaveARecoverableLibraryRoute() {
@@ -235,7 +250,7 @@ private slots:
     }
     void perPetSettingsPersistIndependently() {
         QTemporaryDir root;
-        const PetOptions alpha{150, false, false, true, 0}, beta{75, true, true, false, 2};
+        const PetOptions alpha{50, false, false, true, 0}, beta{155, true, true, false, 2};
         {
             Preferences preferences(root.path(), false);
             preferences.savePet("alpha", alpha); preferences.savePet("beta", beta);
@@ -253,6 +268,8 @@ private slots:
         preferences.state().setValue("pets/test/pace", -5);
         QCOMPARE(preferences.pet("test").size, 100);
         QCOMPARE(preferences.pet("test").pace, 0);
+        preferences.state().setValue("pets/test/size", 49);
+        QCOMPARE(preferences.pet("test").size, 100);
     }
     void migrateOnlyThePreviousPetAndOnlyOnce() {
         QTemporaryDir root, legacyRoot;

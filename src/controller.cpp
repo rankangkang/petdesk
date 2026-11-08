@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "bundledpets.h"
 #include "statusentry.h"
 #include "uistyle.h"
 #include <QAction>
@@ -113,6 +114,12 @@ Controller::~Controller() { setReopenHandler({}); m_statusEntry.reset(); m_pet.a
 
 void Controller::start() {
     auto &state = m_preferences.state();
+    try {
+        seedBundledPets(QDir(QCoreApplication::applicationDirPath()).filePath("bundled-pets"), m_library);
+    } catch (const std::exception &error) {
+        qWarning("Could not prepare bundled pets: %s", error.what());
+        m_manager->setNotice(QStringLiteral("内置桌宠加载失败，可稍后重新打开应用重试。"), true);
+    }
     m_pet.setPetScale(1);
     if (auto *screen = QGuiApplication::primaryScreen()) {
         const QRect bounds = screen->availableGeometry();

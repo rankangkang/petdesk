@@ -18,6 +18,7 @@
 #include <QScopedValueRollback>
 #include <QScrollArea>
 #include <QShowEvent>
+#include <QSlider>
 #include <QStackedWidget>
 #include <QStyle>
 #include <QTabBar>
@@ -243,10 +244,17 @@ ManagerWindow::ManagerWindow() {
     auto *runtime = new QWidget; auto *runtimeBody = new QVBoxLayout(runtime); runtimeBody->setContentsMargins(0, 0, 0, 0); runtimeBody->setSpacing(14);
     m_currentName = text({}, "currentPetName"); runtimeBody->addWidget(m_currentName, 0, Qt::AlignLeft);
     auto *displayLayout = new QVBoxLayout; displayLayout->setSpacing(6);
-    m_size = new ui::ComboBox; m_size->setObjectName("petSize"); m_size->setAccessibleName(QStringLiteral("桌宠大小"));
-    for (int size : {75, 100, 125, 150, 200}) m_size->addItem(QString::number(size) + '%', size);
-    m_size->setMinimumWidth(110);
-    displayLayout->addWidget(settingRow(QStringLiteral("大小"), m_size));
+    auto *sizeControls = new QWidget;
+    auto *sizeRow = new QHBoxLayout(sizeControls); sizeRow->setContentsMargins(0, 0, 0, 0); sizeRow->setSpacing(10);
+    m_size = new QSlider(Qt::Horizontal); m_size->setObjectName("petSize");
+    m_size->setAccessibleName(QStringLiteral("桌宠大小"));
+    m_size->setAccessibleDescription(QStringLiteral("范围 50% 到 200%"));
+    m_size->setRange(50, 200); m_size->setSingleStep(5); m_size->setPageStep(25);
+    m_size->setValue(100); m_size->setFixedWidth(150);
+    m_sizeValue = text(QStringLiteral("100%"), "settingValue"); m_sizeValue->setObjectName("petSizeValue");
+    m_sizeValue->setMinimumWidth(42); m_sizeValue->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    sizeRow->addWidget(m_size); sizeRow->addWidget(m_sizeValue);
+    displayLayout->addWidget(settingRow(QStringLiteral("大小"), sizeControls));
     displayLayout->addWidget(divider());
     m_screen = new ui::ComboBox; m_screen->setAccessibleName(QStringLiteral("目标屏幕"));
     m_screen->setMinimumWidth(140); m_screen->setMaximumWidth(200);
@@ -296,7 +304,9 @@ ManagerWindow::ManagerWindow() {
     runtimeBody->addWidget(group(QStringLiteral("动作与动画"), previewLayout)); runtimeBody->addStretch();
     m_runtimeState->addWidget(runtime); runtimeLayout->addWidget(m_runtimeState, 1);
     for (auto *check : {m_gaze, m_automatic, m_walk}) connect(check, &QCheckBox::toggled, this, [this] { emitPetOptions(); });
-    connect(m_size, &QComboBox::currentIndexChanged, this, [this] { emitPetOptions(); });
+    connect(m_size, &QSlider::valueChanged, this, [this](int size) {
+        m_sizeValue->setText(QString::number(size) + QLatin1Char('%')); emitPetOptions();
+    });
     connect(m_pace, &QComboBox::currentIndexChanged, this, [this] { emitPetOptions(); });
 
     QVBoxLayout *preferencesLayout; page(m_pages, preferencesLayout);
@@ -373,10 +383,14 @@ void ManagerWindow::updateSelection() {
     for (auto *widget : {m_use, m_archive, m_reveal}) widget->setEnabled(valid);
     m_preview->clear();
     if (!valid) {
+        m_archive->setText(QStringLiteral("移出宠物库")); m_archive->setToolTip({});
         m_name->setFullText(QStringLiteral("还没有桌宠")); m_capabilities->clear(); m_description->clear();
         m_description->hide(); return;
     }
     const auto &entry = *found;
+    m_archive->setEnabled(!entry.builtIn);
+    m_archive->setText(entry.builtIn ? QStringLiteral("内置桌宠") : QStringLiteral("移出宠物库"));
+    m_archive->setToolTip(entry.builtIn ? QStringLiteral("内置桌宠不可移除") : QString());
     if (!m_previewCache.contains(entry.key)) {
         QImage image;
         if (previewRequested) image = previewRequested(entry.key);
@@ -395,7 +409,8 @@ void ManagerWindow::updateSelection() {
         m_preview->setPixmap(scaled);
     }
     m_name->setFullText(entry.name);
-    m_capabilities->setText(entry.version == 2 ? QStringLiteral("9 种动作 · 16 向注视") : QStringLiteral("9 种动作"));
+    m_capabilities->setText((entry.builtIn ? QStringLiteral("内置 · ") : QString()) +
+        (entry.version == 2 ? QStringLiteral("9 种动作 · 16 向注视") : QStringLiteral("9 种动作")));
     m_description->setText(entry.description);
     m_description->setToolTip(entry.description);
     m_description->setVisible(!entry.description.isEmpty());
@@ -408,7 +423,7 @@ void ManagerWindow::setCurrentPet(const PetEntry &entry, PetOptions options, boo
     m_hasPet = !entry.key.isEmpty(); m_currentKey = entry.key; m_currentNameText = entry.name; m_petVisible = visible;
     m_runtimeState->setCurrentIndex(m_hasPet ? 1 : 0);
     m_currentName->setText(QStringLiteral("当前桌宠：") + entry.name);
-    m_size->setCurrentIndex(std::max(0, m_size->findData(options.size)));
+    m_size->setValue(options.size);
     m_gaze->setChecked(options.gaze && entry.version == 2); m_gaze->setEnabled(entry.version == 2);
     m_gazeHint->setText(QStringLiteral("该桌宠不支持注视"));
     m_gazeHint->setVisible(m_hasPet && entry.version != 2);
@@ -447,7 +462,7 @@ void ManagerWindow::setNotice(const QString &value, bool error) {
 void ManagerWindow::emitPetOptions() {
     if (m_syncing || !m_hasPet) return;
     m_walk->setEnabled(m_automatic->isChecked()); m_pace->setEnabled(m_automatic->isChecked());
-    emit petOptionsChanged({m_size->currentData().toInt(), m_gaze->isChecked(), m_automatic->isChecked(),
+    emit petOptionsChanged({m_size->value(), m_gaze->isChecked(), m_automatic->isChecked(),
         m_walk->isChecked(), m_pace->currentIndex()});
 }
 void ManagerWindow::emitAppOptions() {

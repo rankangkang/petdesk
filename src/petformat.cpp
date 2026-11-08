@@ -181,11 +181,19 @@ PetData readPetDirectory(const QString &directory) {
 
 PetLibrary::PetLibrary(QString root) : m_root(std::move(root)) {}
 
+QString petLibraryKey(const PetData &pet) {
+    return QString::fromLatin1(QCryptographicHash::hash(
+        pet.sha256.toUtf8() + '\0' + pet.name.toUtf8(), QCryptographicHash::Sha256).toHex());
+}
+
 QVector<PetEntry> PetLibrary::entries() const {
     QVector<PetEntry> result;
     for (const auto &folder : QDir(m_root).entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
         if (!validKey(folder.fileName()) || folder.isSymLink()) continue;
-        try { result.append(entryFromFolder(folder.absoluteFilePath())); }
+        try {
+            auto entry = entryFromFolder(folder.absoluteFilePath());
+            entry.builtIn = isProtected(entry.key); result.append(entry);
+        }
         catch (const std::exception &) { /* Incomplete directories are not published imports. */ }
     }
     std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
@@ -196,8 +204,7 @@ QVector<PetEntry> PetLibrary::entries() const {
 
 PetEntry PetLibrary::importDirectory(const QString &directory) const {
     auto pet = readPetDirectory(directory);
-    const QString key = QString::fromLatin1(QCryptographicHash::hash(
-        pet.sha256.toUtf8() + '\0' + pet.name.toUtf8(), QCryptographicHash::Sha256).toHex());
+    const QString key = petLibraryKey(pet);
     if (!QDir().mkpath(m_root)) fail(QStringLiteral("无法创建本地宠物目录。"));
     const QString target = QDir(m_root).filePath(key);
     if (QDir(target).exists()) {
@@ -240,6 +247,7 @@ QVector<PetEntry> PetLibrary::archivedEntries() const {
 }
 
 void PetLibrary::archive(const QString &key) const {
+    if (isProtected(key)) fail(QStringLiteral("内置桌宠不可移除。"));
     const QString source = ownedFolder(m_root, key);
     const QString target = QDir(archiveRoot()).filePath(key);
     if (QFileInfo::exists(target)) fail(QStringLiteral("已移出列表中存在同一只宠物，请先恢复它。"));

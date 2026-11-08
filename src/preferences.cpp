@@ -6,8 +6,9 @@
 namespace petdesk {
 namespace {
 int sizeValue(const QVariant &value) {
-    const int size = value.toInt();
-    return QList<int>{75, 100, 125, 150, 200}.contains(size) ? size : 100;
+    bool valid = false;
+    const int size = value.toInt(&valid);
+    return valid && size >= 50 && size <= 200 ? size : 100;
 }
 }
 Preferences::Preferences(const QString &root, bool migrateLegacy)

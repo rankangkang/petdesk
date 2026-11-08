@@ -147,6 +147,13 @@ QComboBox::drop-down { border: 0; width: 24px; }
 QComboBox::down-arrow { image: none; }
 QComboBox QAbstractItemView { color: #303030; background: #ffffff; border: 1px solid #dedede;
   selection-background-color: #ededed; selection-color: #202123; outline: 0; padding: 4px; }
+QSlider::groove:horizontal { height: 4px; border-radius: 2px; background: #e5e5e5; }
+QSlider::sub-page:horizontal { background: #4e83ed; border-radius: 2px; }
+QSlider::handle:horizontal { width: 14px; height: 14px; margin: -6px 0; border-radius: 7px;
+  background: #ffffff; border: 1px solid #bdbdbd; }
+QSlider::handle:horizontal:hover { border-color: #888888; }
+QSlider:focus::handle:horizontal { border: 2px solid #4e83ed; }
+QLabel#petSizeValue { color: #555555; font-size: 12px; }
 QScrollBar:vertical { background: transparent; width: 9px; margin: 5px 0; }
 QScrollBar::handle:vertical { background: #d5d5d5; border-radius: 4px; min-height: 30px; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }

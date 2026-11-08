@@ -29,6 +29,14 @@ void prepare(PetWindow &window) {
 class WindowTests : public QObject {
     Q_OBJECT
 private slots:
+    void halfSizeKeepsTheSameBottomAnchor() {
+        PetWindow window;
+        prepare(window);
+        const QPoint before = window.geometry().bottomLeft();
+        window.setPetScale(0.5);
+        QCOMPARE(window.size(), QSize(108, 116));
+        QCOMPARE(window.geometry().bottomLeft(), before);
+    }
     void hidingCancelsTheOldPlanRatherThanResumingIt() {
         PetWindow window;
         prepare(window);
