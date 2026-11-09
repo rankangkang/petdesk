@@ -93,9 +93,10 @@ def read_profile(filename: Path, target: str) -> dict:
                 raise ValueError(f"Icon source not found: {icons[key]}")
         if target == "macos" and not shutil.which("iconutil"):
             raise ValueError("macOS iconutil was not found")
-    suffix = config.get("windows_suffix", "")
-    if not isinstance(suffix, str) or not re.fullmatch(r"[A-Za-z0-9-]*", suffix):
-        raise ValueError("windows_suffix may only contain letters, digits, or hyphens")
+    for suffix_name in ("windows_suffix", "macos_suffix"):
+        suffix = config.get(suffix_name, "")
+        if not isinstance(suffix, str) or not re.fullmatch(r"[A-Za-z0-9-]*", suffix):
+            raise ValueError(f"{suffix_name} may only contain letters, digits, or hyphens")
     return config
 
 
@@ -104,7 +105,7 @@ def run(command: list[str], env: Optional[dict] = None) -> None:
     subprocess.run([str(part) for part in command], env=env, check=True)
 
 
-def build(config: dict, target: str, skip_tests: bool, check_content: bool) -> None:
+def build(config: dict, target: str, skip_tests: bool, check_content: bool, dmg: bool) -> None:
     work = config["work_dir"]
     work.mkdir(parents=True, exist_ok=True)
     host_id = hashlib.sha256(f"{config['qt_host']}:{config['qt_version']}".encode()).hexdigest()[:12]
@@ -163,16 +164,34 @@ def build(config: dict, target: str, skip_tests: bool, check_content: bool) -> N
             env.update({"PETDESK_MACOS_BUILD_DIR": str(host_build), "PETDESK_MACOS_OUTPUT_DIR": str(output)})
             run(["bash", ROOT / "scripts/package-macos.sh"], env)
             artifacts = [output / "PetDesk.app"]
+            if dmg:
+                contents = stage / "dmg-contents"; contents.mkdir()
+                run(["ditto", artifacts[0], contents / "PetDesk.app"])
+                (contents / "Applications").symlink_to("/Applications")
+                version_match = re.search(r"^project\(PetDesk VERSION\s+([0-9.]+)",
+                                          (ROOT / "CMakeLists.txt").read_text(encoding="utf-8"), re.MULTILINE)
+                if not version_match:
+                    raise ValueError("Could not determine the PetDesk version")
+                architectures = subprocess.check_output(["lipo", "-archs", str(artifacts[0] / "Contents/MacOS/PetDesk")], text=True).split()
+                if len(architectures) != 1 or architectures[0] not in ("arm64", "x86_64"):
+                    raise ValueError("The DMG needs a single supported macOS architecture")
+                filename = f"PetDesk-{version_match.group(1)}{config.get('macos_suffix', '')}-macOS-{architectures[0]}.dmg"
+                image = output / filename
+                run(["hdiutil", "create", "-volname", "PetDesk", "-srcfolder", contents,
+                     "-format", "UDZO", "-fs", "HFS+", image])
+                artifacts = [image]
         if len(artifacts) != 1 or not artifacts[0].exists():
             raise ValueError("Packaging did not produce exactly one artifact")
         config["output_dir"].mkdir(parents=True, exist_ok=True)
         destination = Path(tempfile.mkdtemp(prefix=f"{target}-{datetime.now():%Y%m%d-%H%M%S}-", dir=config["output_dir"]))
         final = destination / artifacts[0].name
-        if target == "macos":
+        if target == "macos" and not dmg:
             run(["ditto", artifacts[0], final])
             run(["codesign", "--verify", "--deep", "--strict", final])
         else:
             shutil.copy2(artifacts[0], final)
+            if dmg:
+                run(["hdiutil", "verify", final])
         print(f"\nPackage: {final}")
 
 
@@ -186,8 +205,11 @@ def main() -> None:
     checks.add_argument("--dry-run", action="store_true", help="Check configuration without building or packaging")
     checks.add_argument("--check-content", action="store_true", help="Build host tools and validate artwork without packaging")
     parser.add_argument("--skip-tests", action="store_true", help="Skip host tests for a faster repeat build")
+    parser.add_argument("--dmg", action="store_true", help="Create a macOS drag-to-Applications disk image")
     args = parser.parse_args()
     try:
+        if args.dmg and (args.target != "macos" or not shutil.which("hdiutil")):
+            raise ValueError("--dmg requires macOS and hdiutil")
         config = read_profile(args.config, args.target)
         print(f"Target: {args.target}; Qt: {config['qt_version']}; bundled pets: {len(config.get('pets', []))}")
         print(f"Work: {config['work_dir']}\nOutput: {config['output_dir']}")
@@ -195,7 +217,7 @@ def main() -> None:
         if args.dry_run:
             print("Configuration paths OK; pet contents will be validated when packaging. No build or package created.")
         else:
-            build(config, args.target, args.skip_tests, args.check_content)
+            build(config, args.target, args.skip_tests, args.check_content, args.dmg)
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"Packaging failed: {error}\n")
 

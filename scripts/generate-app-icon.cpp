@@ -43,19 +43,23 @@ int main(int argc, char **argv) {
         qWarning("Usage: petdesk_icon_generator artwork.png status-artwork.png app.png app.iconset status.png app.ico [--preserve]");
         return 2;
     }
+    const bool preserve = argc == 8;
     const QImage artwork(QString::fromLocal8Bit(argv[1]));
     const QImage statusArtwork(QString::fromLocal8Bit(argv[2]));
-    if (artwork.isNull() || artwork.width() != artwork.height() || statusArtwork.isNull() ||
-        statusArtwork.width() != statusArtwork.height() || !statusArtwork.hasAlphaChannel()) {
-        qWarning("The source images must be square, and the status artwork must have an alpha channel");
+    if (artwork.isNull() || statusArtwork.isNull() || !statusArtwork.hasAlphaChannel() ||
+        (!preserve && (artwork.width() != artwork.height() || statusArtwork.width() != statusArtwork.height()))) {
+        qWarning("The status artwork must have an alpha channel; legacy mode requires square images");
         return 1;
     }
     QImage master(1024, 1024, QImage::Format_ARGB32_Premultiplied);
     master.fill(Qt::transparent);
     QPainter painter(&master);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    const bool preserve = argc == 8;
-    if (preserve) painter.drawImage(QRectF(0, 0, 1024, 1024), artwork);
+    if (preserve) {
+        QSizeF fitted = artwork.size(); fitted.scale(QSizeF(1024, 1024), Qt::KeepAspectRatio);
+        painter.drawImage(QRectF((1024 - fitted.width()) / 2, (1024 - fitted.height()) / 2,
+                                 fitted.width(), fitted.height()), artwork);
+    }
     else {
         QPainterPath tile;
         tile.addRoundedRect(QRectF(64, 64, 896, 896), 200, 200);
@@ -80,7 +84,9 @@ int main(int argc, char **argv) {
     statusPainter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
     if (preserve) {
         // Preserve the supplied transparent canvas rather than applying the original artwork's crop.
-        statusPainter.drawImage(QRectF(2, 2, 124, 124), statusArtwork);
+        QSizeF fitted = statusArtwork.size(); fitted.scale(QSizeF(124, 124), Qt::KeepAspectRatio);
+        statusPainter.drawImage(QRectF((128 - fitted.width()) / 2, (128 - fitted.height()) / 2,
+                                       fitted.width(), fitted.height()), statusArtwork);
     } else {
         const qreal unit = statusArtwork.width() / 1254.0;
         statusPainter.drawImage(QRectF(2, 2, 124, 124), statusArtwork,
