@@ -47,6 +47,10 @@ macOS 运行时在菜单栏显示 PetDesk 图标，不占用 Dock；点击图标
 
 支持透明 PNG 和静态 WebP：v1 为 1536×1872，v2 为 1536×2288，每格 192×208、8 列。校验版本、尺寸、透明通道、必需帧和可选校验值；图片限制 20 MiB、JSON 限制 128 KiB。拒绝越出所选目录的图片路径。目录中的脚本、提示词和其他代码不会执行。
 
+## 制作新的桌宠
+
+仓库提供 [petdesk-create-pet 技能](.agents/skills/petdesk-create-pet/SKILL.md)，可以在支持仓库技能的工具中用 `$petdesk-create-pet` 从参考照片、头像或角色设定制作可直接导入的桌宠。技能包含分动作生成流程、图集拼装、动态预览和本地 PetDesk 校验，也可适配已有 v1/v2 素材。生成过程需要图像生成能力，随附处理脚本只依赖 Python 与 Pillow；交付后的桌宠由 App 独立运行。宠物素材与生成记录保存在宿主代码仓库之外。
+
 ## 构建
 
 需要 C++20、CMake 3.21+ 和 Qt Core/Gui/Widgets/Test，以及 Qt 的 JPEG 和 WebP 图片插件。macOS 要求 Qt 6.9.1+，本次使用 Qt 6.9.3；其他平台最低 Qt 6.5。Qt 6.9.0 的 Cocoa 辅助功能有已知崩溃，不能用于此 Mac 应用。

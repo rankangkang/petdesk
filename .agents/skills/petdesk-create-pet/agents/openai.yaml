@@ -1,0 +1,4 @@
+interface:
+  display_name: "PetDesk 萌宠制作"
+  short_description: "从照片或角色创作桌宠，生成动作预览并导出 PetDesk 可导入目录"
+  default_prompt: "使用 $petdesk-create-pet，按我的参考形象制作一只可以直接导入 PetDesk 的萌宠。"
