@@ -324,6 +324,19 @@ ManagerWindow::ManagerWindow() {
     m_closeBehavior->addItems({QStringLiteral("桌宠继续运行"), QStringLiteral("退出 PetDesk")});
     closing->addWidget(settingRow(QStringLiteral("关闭控制台时"), m_closeBehavior));
     preferencesLayout->addWidget(group(QStringLiteral("关闭与常驻"), closing));
+    auto *appearance = new QVBoxLayout;
+    auto *iconControls = new QWidget; auto *iconLayout = new QHBoxLayout(iconControls);
+    iconLayout->setContentsMargins(0, 0, 0, 0); iconLayout->setSpacing(8);
+    m_iconPreview = new QLabel; m_iconPreview->setObjectName("appIconPreview");
+    m_iconPreview->setFixedSize(32, 32); m_iconPreview->setAccessibleName(QStringLiteral("当前图标"));
+    auto *chooseIcon = button(QStringLiteral("更换"), "chooseAppIcon");
+    chooseIcon->setToolTip(QStringLiteral("更换窗口及状态栏图标；应用文件图标由发行包决定。"));
+    m_resetIcon = button(QStringLiteral("恢复默认"), "resetAppIcon");
+    connect(chooseIcon, &QPushButton::clicked, this, &ManagerWindow::chooseIconRequested);
+    connect(m_resetIcon, &QPushButton::clicked, this, &ManagerWindow::resetIconRequested);
+    iconLayout->addWidget(m_iconPreview); iconLayout->addWidget(chooseIcon); iconLayout->addWidget(m_resetIcon);
+    appearance->addWidget(settingRow(QStringLiteral("窗口与状态栏图标"), iconControls));
+    preferencesLayout->addWidget(group(QStringLiteral("外观"), appearance));
     auto *storage = new QVBoxLayout; storage->setSpacing(6);
     auto *data = button(QStringLiteral("打开文件夹"), "openDataFolder");
     data->setIcon(ui::icon(ui::Icon::Folder, QColor("#555555")));
@@ -439,6 +452,13 @@ void ManagerWindow::setAppOptions(AppOptions options) {
     const QScopedValueRollback<bool> blocker(m_syncing, true);
     m_openConsole->setChecked(options.openConsole); m_restorePet->setChecked(options.restorePet);
     m_closeBehavior->setCurrentIndex(options.quitOnClose ? 1 : 0);
+}
+void ManagerWindow::setAppIcon(const QImage &image, bool custom) {
+    const qreal dpr = m_iconPreview->devicePixelRatioF();
+    QPixmap preview = QPixmap::fromImage(image).scaled(QSize(qRound(32 * dpr), qRound(32 * dpr)),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    preview.setDevicePixelRatio(dpr);
+    m_iconPreview->setPixmap(preview); m_resetIcon->setEnabled(custom);
 }
 void ManagerWindow::setScreens(const QStringList &names) {
     const int previous = m_screen->currentIndex();

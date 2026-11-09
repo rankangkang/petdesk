@@ -2,6 +2,8 @@
 #include <QAction>
 #include <QApplication>
 #include <QMenu>
+#include <QImage>
+#include <QPixmap>
 #include <QStyle>
 #include <QSystemTrayIcon>
 
@@ -28,5 +30,8 @@ struct StatusEntry::Impl {
 StatusEntry::StatusEntry(QAction *open, QAction *importPet, QAction *visibility, QAction *pause, QAction *quit)
     : m_impl(std::make_unique<Impl>(open, importPet, visibility, pause, quit)) {}
 StatusEntry::~StatusEntry() = default;
+void StatusEntry::setIcon(const QImage &image) {
+    if (!image.isNull()) m_impl->tray.setIcon(QIcon(QPixmap::fromImage(image)));
+}
 void StatusEntry::activateApplication() {}
 }

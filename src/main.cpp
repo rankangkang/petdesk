@@ -30,7 +30,8 @@ int main(int argc, char *argv[]) {
         try {
             const auto pet = petdesk::readPetDirectory(QString::fromLocal8Bit(argv[2]));
             const QJsonObject result{{"ok", true}, {"name", pet.name}, {"version", pet.version},
-                {"width", pet.atlas.width()}, {"height", pet.atlas.height()}, {"sha256", pet.sha256}};
+                {"width", pet.atlas.width()}, {"height", pet.atlas.height()}, {"sha256", pet.sha256},
+                {"id", pet.id}, {"description", pet.description}, {"format", pet.format}, {"atlasPath", pet.atlasPath}};
             std::fputs(QJsonDocument(result).toJson().constData(), stdout);
             return 0;
         } catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }

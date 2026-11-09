@@ -1,0 +1,15 @@
+{
+  "qt_host": "/path/to/Qt/6.9.3/macos",
+  "qt_windows": "/path/to/Qt/6.9.3/llvm-mingw_64",
+  "llvm_mingw": "/path/to/llvm-mingw",
+  "work_dir": "/path/outside/repository/PetDesk-build",
+  "output_dir": "/path/outside/repository/PetDesk-packages",
+  "windows_suffix": "-test",
+  "pets": [
+    {"id": "example", "path": "/path/to/pet-directory"}
+  ],
+  "icons": {
+    "application": "/path/to/square-app-artwork.png",
+    "status": "/path/to/square-transparent-status-artwork.png"
+  }
+}

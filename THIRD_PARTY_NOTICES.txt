@@ -1,10 +1,10 @@
-PetDesk 0.5.0 local prototype
+PetDesk 0.6.0 local prototype
 
-Qt 6.9.3 (Core, Gui, Widgets and the applicable platform and WebP plugins)
+Qt 6 (Core, Gui, Widgets and the applicable platform, JPEG and WebP plugins)
 Copyright The Qt Company Ltd. and contributors.
 Qt is dynamically linked. Qt offers LGPLv3/GPL and commercial licensing.
-License information: https://doc.qt.io/qt-6.9/licensing.html
-Source release: https://download.qt.io/archive/qt/6.9/6.9.3/single/
+License information: https://doc.qt.io/qt-6/licensing.html
+Source releases: https://download.qt.io/archive/qt/
 The local package does not modify the Qt libraries.
 
 The macOS and Windows builds use unmodified official Qt SDK libraries and

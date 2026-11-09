@@ -30,7 +30,7 @@ QLabel *label(const QString &text) {
 }
 }
 Controller::Controller(const QString &dataRoot, bool migrateLegacy)
-    : m_root(dataRoot), m_library(QDir(dataRoot).filePath("pets")),
+    : m_root(dataRoot), m_library(QDir(dataRoot).filePath("pets")), m_iconStore(dataRoot),
       m_preferences(dataRoot, migrateLegacy), m_manager(new ManagerWindow) {
     auto &settings = m_preferences.state();
     m_paused = settings.value("paused", false).toBool();
@@ -75,6 +75,11 @@ Controller::Controller(const QString &dataRoot, bool migrateLegacy)
     connect(m_manager, &ManagerWindow::repositoryRequested, this, [] {
         QDesktopServices::openUrl(QUrl("https://github.com/rankangkang/petdesk"));
     });
+    connect(m_manager, &ManagerWindow::chooseIconRequested, this, [this] { chooseIcon(); });
+    connect(m_manager, &ManagerWindow::resetIconRequested, this, [this] {
+        m_preferences.state().setValue("appearance/customIcon", false);
+        applyAppIcon(); m_manager->setNotice(QStringLiteral("已恢复默认图标"));
+    });
     connect(m_manager, &ManagerWindow::quitRequested, qApp, &QApplication::quit);
 
     auto *appMenu = m_manager->menuBar()->addMenu(QStringLiteral("文件"));
@@ -104,6 +109,11 @@ Controller::Controller(const QString &dataRoot, bool migrateLegacy)
     });
     connect(m_manager, &ManagerWindow::pauseRequested, m_pause, &QAction::setChecked);
     m_statusEntry = std::make_unique<StatusEntry>(statusOpen, statusImport, m_visibility, m_pause, statusQuit);
+    const bool useCustomIcon = settings.value("appearance/customIcon", false).toBool();
+    const QImage customIcon = useCustomIcon ? m_iconStore.load() : QImage{};
+    applyAppIcon(customIcon);
+    if (useCustomIcon && customIcon.isNull())
+        m_manager->setNotice(QStringLiteral("自定义图标不可用，已使用默认图标。"), true);
     connect(qApp, &QGuiApplication::screenAdded, this, [this] { refreshScreens(); });
     connect(qApp, &QGuiApplication::screenRemoved, this, [this] { refreshScreens(); });
     connect(qApp, &QCoreApplication::aboutToQuit, this, [this] {
@@ -297,5 +307,23 @@ void Controller::importDirectory(const QString &directory) {
 }
 void Controller::showError(const QString &message) {
     showManager(); m_manager->setNotice(message, true);
+}
+void Controller::applyAppIcon(const QImage &custom) {
+    const bool isCustom = !custom.isNull();
+    const QImage appIcon = isCustom ? custom : QImage(QStringLiteral(":/assets/PetDesk.png"));
+    const QImage statusIcon = isCustom ? custom : QImage(QStringLiteral(":/assets/PetDesk-status.png"));
+    QApplication::setWindowIcon(QIcon(QPixmap::fromImage(appIcon)));
+    if (m_statusEntry) m_statusEntry->setIcon(statusIcon);
+    m_manager->setAppIcon(statusIcon, isCustom);
+}
+void Controller::chooseIcon() {
+    const QString file = QFileDialog::getOpenFileName(m_manager, QStringLiteral("选择应用图标"), QDir::homePath(),
+        QStringLiteral("图片 (*.png *.jpg *.jpeg *.webp)"));
+    if (file.isEmpty()) return;
+    try {
+        const QImage icon = m_iconStore.importFile(file);
+        m_preferences.state().setValue("appearance/customIcon", true);
+        applyAppIcon(icon); m_manager->setNotice(QStringLiteral("图标已更新"));
+    } catch (const std::exception &error) { showError(QString::fromUtf8(error.what())); }
 }
 }

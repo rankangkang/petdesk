@@ -1,5 +1,6 @@
 #pragma once
 #include "activation.h"
+#include "iconstore.h"
 #include "managerwindow.h"
 #include "petformat.h"
 #include "petwindow.h"
@@ -27,8 +28,11 @@ private:
     void archivePet(const QString &key);
     void restorePet(const QString &key);
     void showError(const QString &message);
+    void chooseIcon();
+    void applyAppIcon(const QImage &custom = {});
     QString m_root;
     PetLibrary m_library;
+    IconStore m_iconStore;
     Preferences m_preferences;
     PetWindow m_pet;
     ManagerWindow *m_manager;

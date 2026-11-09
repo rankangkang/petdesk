@@ -39,8 +39,8 @@ static bool writeIco(const QImage &image, const QString &path) {
 
 int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
-    if (argc != 7) {
-        qWarning("Usage: petdesk_icon_generator artwork.png status-artwork.png app.png app.iconset status.png app.ico");
+    if (argc != 7 && !(argc == 8 && QByteArray(argv[7]) == "--preserve")) {
+        qWarning("Usage: petdesk_icon_generator artwork.png status-artwork.png app.png app.iconset status.png app.ico [--preserve]");
         return 2;
     }
     const QImage artwork(QString::fromLocal8Bit(argv[1]));
@@ -54,10 +54,14 @@ int main(int argc, char **argv) {
     master.fill(Qt::transparent);
     QPainter painter(&master);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    QPainterPath tile;
-    tile.addRoundedRect(QRectF(64, 64, 896, 896), 200, 200);
-    painter.setClipPath(tile);
-    painter.drawImage(QRectF(64, 64, 896, 896), artwork);
+    const bool preserve = argc == 8;
+    if (preserve) painter.drawImage(QRectF(0, 0, 1024, 1024), artwork);
+    else {
+        QPainterPath tile;
+        tile.addRoundedRect(QRectF(64, 64, 896, 896), 200, 200);
+        painter.setClipPath(tile);
+        painter.drawImage(QRectF(64, 64, 896, 896), artwork);
+    }
     painter.end();
     if (!master.save(QString::fromLocal8Bit(argv[3]))) return 1;
 
@@ -74,9 +78,14 @@ int main(int argc, char **argv) {
     status.fill(Qt::transparent);
     QPainter statusPainter(&status);
     statusPainter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    const qreal unit = statusArtwork.width() / 1254.0;
-    statusPainter.drawImage(QRectF(2, 2, 124, 124), statusArtwork,
-                            QRectF(125 * unit, 125 * unit, 1000 * unit, 1000 * unit));
+    if (preserve) {
+        // Preserve the supplied transparent canvas rather than applying the original artwork's crop.
+        statusPainter.drawImage(QRectF(2, 2, 124, 124), statusArtwork);
+    } else {
+        const qreal unit = statusArtwork.width() / 1254.0;
+        statusPainter.drawImage(QRectF(2, 2, 124, 124), statusArtwork,
+                                QRectF(125 * unit, 125 * unit, 1000 * unit, 1000 * unit));
+    }
     statusPainter.end();
     if (!status.save(QString::fromLocal8Bit(argv[5]))) return 1;
     return writeIco(master, QString::fromLocal8Bit(argv[6])) ? 0 : 1;

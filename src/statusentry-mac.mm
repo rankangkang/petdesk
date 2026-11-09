@@ -1,19 +1,24 @@
 #include "statusentry.h"
 #include "statusentry-mac-bridge.h"
 #include <QAction>
+#include <QBuffer>
 #include <QDebug>
 #include <QFile>
 #include <QGuiApplication>
 
-NSImage *PetDeskStatusPortrait(void) {
-    QFile iconFile(QStringLiteral(":/assets/PetDesk-status.png"));
-    if (!iconFile.open(QIODevice::ReadOnly)) return nil;
-    const QByteArray iconData = iconFile.readAll();
+NSImage *PetDeskStatusImage(const QImage &source) {
+    if (source.isNull()) return nil;
+    QByteArray iconData;
+    QBuffer buffer(&iconData);
+    if (!buffer.open(QIODevice::WriteOnly) || !source.save(&buffer, "PNG")) return nil;
     NSData *data = [NSData dataWithBytes:iconData.constData() length:iconData.size()];
     NSImage *image = [[NSImage alloc] initWithData:data];
     [image setSize:NSMakeSize(18, 18)];
     [image setTemplate:NO];
     return image;
+}
+NSImage *PetDeskStatusPortrait(void) {
+    return PetDeskStatusImage(QImage(QStringLiteral(":/assets/PetDesk-status.png")));
 }
 
 @implementation PetDeskStatusTarget
@@ -80,5 +85,9 @@ struct StatusEntry::Impl {
 StatusEntry::StatusEntry(QAction *open, QAction *importPet, QAction *visibility, QAction *pause, QAction *quit)
     : m_impl(std::make_unique<Impl>(open, importPet, visibility, pause, quit)) {}
 StatusEntry::~StatusEntry() = default;
+void StatusEntry::setIcon(const QImage &image) {
+    if (NSImage *icon = PetDeskStatusImage(image); icon && m_impl->status)
+        m_impl->status.button.image = icon;
+}
 void StatusEntry::activateApplication() { if (NSApp) [NSApp activate]; }
 }

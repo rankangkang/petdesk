@@ -17,7 +17,7 @@
 |---|---|
 | 宠物库 | 导入、预览、切换、查看本地文件，移出与恢复 |
 | 桌面设置 | 按每只宠物分别保存大小、注视、自动播放动作、自动散步和活动频率；选择屏幕、找回位置、暂停与试播动作 |
-| 应用偏好 | 再次启动时是否打开控制台、是否恢复上次桌宠；关闭控制台时继续运行或退出；查看数据文件夹 |
+| 应用偏好 | 启动与关闭行为、更换运行时图标、查看数据文件夹 |
 | 关于 | 支持范围与开源仓库入口 |
 
 macOS 运行时在菜单栏显示 PetDesk 图标，不占用 Dock；点击图标可打开菜单，再选择「打开控制台」。Windows 在通知区域显示图标，左键打开控制台，右键打开菜单；图标也可能位于系统的折叠区域。右键桌宠或再次打开 PetDesk 也能找回控制台。默认关闭窗口只收起控制台，桌宠继续运行；「退出」会结束整个应用。单击桌宠挥手、双击跳跃、按住拖动移动。
@@ -27,6 +27,8 @@ macOS 运行时在菜单栏显示 PetDesk 图标，不占用 Dock；点击图标
 ## 设置与本地数据
 
 每只宠物独立保存 50%–200% 大小、注视开关、自动活动、自动散步和三档活动频率。大小可用滑杆微调，方向键每次调整 5%。v1 素材没有注视姿势，对应选项会禁用并说明原因；v2 支持 16 向注视。关闭自动播放动作后，自动散步和频率选项随之禁用，手动动作仍可使用。
+
+在「应用偏好」→「外观」可更换或恢复运行时图标，控制台窗口及菜单栏／通知区域立即更新；支持 PNG、JPEG、WebP。图片会复制到本地数据目录，重启后保留。访达中的应用文件图标和 Windows 可执行文件图标由发行包决定，可在打包时自定义。
 
 新宠物默认开启注视与自动播放动作，自动散步默认关闭。0.1/0.2 的已选宠物及其设置会迁移，其他新导入的宠物使用各自默认值。启动偏好和桌宠设置自动保存在应用数据目录中的 `settings.ini`。
 
@@ -47,7 +49,7 @@ macOS 运行时在菜单栏显示 PetDesk 图标，不占用 Dock；点击图标
 
 ## 构建
 
-需要 C++20、CMake 3.21+ 和 Qt Core/Gui/Widgets/Test，以及 Qt Image Formats 的 WebP 插件。macOS 要求 Qt 6.9.1+，本次使用 Qt 6.9.3；其他平台最低 Qt 6.5。Qt 6.9.0 的 Cocoa 辅助功能有已知崩溃，不能用于此 Mac 应用。
+需要 C++20、CMake 3.21+ 和 Qt Core/Gui/Widgets/Test，以及 Qt 的 JPEG 和 WebP 图片插件。macOS 要求 Qt 6.9.1+，本次使用 Qt 6.9.3；其他平台最低 Qt 6.5。Qt 6.9.0 的 Cocoa 辅助功能有已知崩溃，不能用于此 Mac 应用。
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/path/to/Qt/6.9.3/macos
@@ -75,7 +77,7 @@ bash scripts/package-macos.sh
 
 脚本使用 CMake 当前配置的 Qt SDK，输出 `dist/PetDesk.app`，并限制插件只从包内加载。当前构建为 macOS 14+、Apple Silicon；Windows、Linux 和 Intel Mac 尚未实测，Wayland 的窗口定位也需要平台验证。
 
-使用 LLVM-MinGW、匹配版本的 Windows Qt SDK 和 NSIS 可以交叉构建 Windows x64 安装包。将 `PETDESK_LLVM_MINGW_ROOT`、`PETDESK_QT_WINDOWS_ROOT`、`QT_HOST_PATH` 指向对应工具链与 SDK 后，执行 `bash scripts/package-windows.sh`。可选的 `PETDESK_BUNDLED_PETS_DIR` 指向仓库外的发行素材目录，未指定时不预置宠物。安装包仅为当前用户安装，卸载保留应用数据。
+可以使用仓库外的本地配置一键构建 macOS 或 Windows x64 包，自动校验并整理内置宠物，也可指定发行包图标。配置、预检查和出包说明见 [打包指南](docs/packaging.md)。Windows 安装包仅为当前用户安装，卸载保留应用数据。
 
 应用图标使用胡桃形象，菜单栏及通知区域使用同一形象的头像；这不限制可导入的桌宠。原始图稿和各平台图标保存在 `assets`。需要重新打包图标时：
 

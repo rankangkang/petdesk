@@ -32,6 +32,9 @@ private slots:
         QVERIFY(menu); QCOMPARE(menu->defaultAction(), &open);
         auto *tray = menu->findChild<QSystemTrayIcon *>("petdeskStatusEntry"); QVERIFY(tray);
         QVERIFY(!tray->icon().pixmap(16, 16).isNull());
+        QImage custom(32, 32, QImage::Format_ARGB32); custom.fill(Qt::green);
+        entry.setIcon(custom);
+        QCOMPARE(tray->icon().pixmap(16, 16).toImage().pixelColor(8, 8), QColor(Qt::green));
         emit tray->activated(QSystemTrayIcon::Trigger);
         emit tray->activated(QSystemTrayIcon::DoubleClick);
         emit tray->activated(QSystemTrayIcon::Context);

@@ -1,5 +1,6 @@
 #include "activation.h"
 #include "controller.h"
+#include "iconstore.h"
 #include "managerwindow.h"
 #include "preferences.h"
 #include "uistyle.h"
@@ -117,6 +118,44 @@ private slots:
         QVERIFY(name->text().endsWith(QChar(0x2026)));
         QVERIFY(name->fontMetrics().horizontalAdvance(name->text()) <= name->contentsRect().width());
         QVERIFY(name->fontMetrics().height() <= name->contentsRect().height());
+    }
+    void customIconIsStoredIndependentlyAndCanBeReset() {
+        QTemporaryDir root, source;
+        const QString input = source.filePath("icon.png");
+        QImage original(80, 40, QImage::Format_ARGB32); original.fill(Qt::green);
+        QVERIFY(original.save(input));
+        IconStore store(root.path());
+        const QImage saved = store.importFile(input);
+        QCOMPARE(saved.size(), QSize(256, 256));
+        QCOMPARE(saved.pixelColor(128, 128), QColor(Qt::green));
+        QCOMPARE(saved.pixelColor(0, 0).alpha(), 0);
+        QVERIFY(QFile::remove(input));
+        QCOMPARE(store.load().pixelColor(128, 128), QColor(Qt::green));
+        QVERIFY_THROWS_EXCEPTION(std::runtime_error, store.importFile(input));
+        QImage transparent(20, 20, QImage::Format_ARGB32); transparent.fill(Qt::transparent);
+        QVERIFY(transparent.save(input));
+        QVERIFY_THROWS_EXCEPTION(std::runtime_error, store.importFile(input));
+        QCOMPARE(store.load().pixelColor(128, 128), QColor(Qt::green));
+        const QString jpeg = source.filePath("icon.jpg"); QVERIFY(original.save(jpeg, "JPEG"));
+        const QImage jpegIcon = IconStore(root.filePath("jpeg")).importFile(jpeg);
+        QVERIFY(jpegIcon.pixelColor(128, 128).green() > 200);
+        const QString webp = source.filePath("icon.webp"); QVERIFY(original.save(webp, "WEBP"));
+        const QImage webpIcon = IconStore(root.filePath("webp")).importFile(webp);
+        QVERIFY(webpIcon.pixelColor(128, 128).green() > 200);
+        {
+            Preferences prefs(root.path(), false);
+            prefs.state().setValue("appearance/customIcon", true); prefs.state().sync();
+        }
+        Controller controller(root.path(), false); controller.start();
+        auto *window = console(); QVERIFY(window);
+        auto *reset = window->findChild<QPushButton *>("resetAppIcon"); QVERIFY(reset && reset->isEnabled());
+        const auto selected = QApplication::windowIcon().pixmap(64, 64).toImage();
+        QCOMPARE(selected.pixelColor(32, 32), QColor(Qt::green));
+        QCOMPARE(window->windowIcon().pixmap(64, 64).toImage().pixelColor(32, 32), QColor(Qt::green));
+        reset->click();
+        QVERIFY(!reset->isEnabled());
+        Preferences reloaded(root.path(), false);
+        QCOMPARE(reloaded.state().value("appearance/customIcon").toBool(), false);
     }
     void importPreviewSupportsCancelAndImportWithoutActivation() {
         QTemporaryDir root, source;

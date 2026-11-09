@@ -12,9 +12,12 @@ suffix=${PETDESK_WINDOWS_SUFFIX:-}
 build_dir=${PETDESK_WINDOWS_BUILD_DIR:-"$project_dir/build/windows-cross"}
 work_dir=${PETDESK_WINDOWS_WORK_DIR:-"$project_dir/build/windows-package"}
 output_dir=${PETDESK_WINDOWS_OUTPUT_DIR:-"$project_dir/dist"}
+icon_dir=${PETDESK_ICON_DIR:-"$project_dir/assets"}
 mkdir -p "$work_dir" "$output_dir"
 work_dir=$(cd "$work_dir" && pwd)
 output_dir=$(cd "$output_dir" && pwd)
+installer="$output_dir/PetDesk-$version${suffix}-Windows-x64-Setup.exe"
+[ ! -e "$installer" ] && [ ! -L "$installer" ] || { printf 'Output already exists: %s\n' "$installer" >&2; exit 1; }
 stage_parent=$(mktemp -d "$work_dir/stage.XXXXXXXX")
 stage="$stage_parent/files"
 mkdir -p "$stage/plugins/platforms" "$stage/plugins/imageformats" "$stage/licenses/Qt/SBOM" "$stage/licenses/LLVM"
@@ -22,7 +25,8 @@ mkdir -p "$stage/plugins/platforms" "$stage/plugins/imageformats" "$stage/licens
 cmake -S "$project_dir" -B "$build_dir" \
   -DCMAKE_TOOLCHAIN_FILE="$project_dir/cmake/windows-llvm-mingw.cmake" \
   -DQT_HOST_PATH="$QT_HOST_PATH" -DQt6_DIR="$PETDESK_QT_WINDOWS_ROOT/lib/cmake/Qt6" \
-  -DCMAKE_PREFIX_PATH="$PETDESK_QT_WINDOWS_ROOT" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+  -DCMAKE_PREFIX_PATH="$PETDESK_QT_WINDOWS_ROOT" -DPETDESK_ICON_DIR="$icon_dir" \
+  -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 cmake --build "$build_dir" --parallel 4
 cp "$build_dir/PetDesk.exe" "$stage/"
 for dll in Qt6Core.dll Qt6Gui.dll Qt6Widgets.dll libc++.dll libunwind.dll; do
@@ -30,6 +34,7 @@ for dll in Qt6Core.dll Qt6Gui.dll Qt6Widgets.dll libc++.dll libunwind.dll; do
 done
 cp "$PETDESK_QT_WINDOWS_ROOT/plugins/platforms/qwindows.dll" "$stage/plugins/platforms/"
 cp "$PETDESK_QT_WINDOWS_ROOT/plugins/imageformats/qwebp.dll" "$stage/plugins/imageformats/"
+cp "$PETDESK_QT_WINDOWS_ROOT/plugins/imageformats/qjpeg.dll" "$stage/plugins/imageformats/"
 cp "$project_dir/packaging/windows-qt.conf" "$stage/qt.conf"
 cp "$project_dir/THIRD_PARTY_NOTICES.txt" "$stage/"
 cp "$project_dir"/LICENSES/* "$stage/licenses/Qt/"
@@ -43,11 +48,14 @@ if [ -n "${PETDESK_BUNDLED_PETS_DIR:-}" ]; then
   [ -d "$PETDESK_BUNDLED_PETS_DIR" ] && [ ! -L "$PETDESK_BUNDLED_PETS_DIR" ] && \
     [ -f "$PETDESK_BUNDLED_PETS_DIR/manifest.json" ] || { printf 'Invalid bundled-pets directory\n' >&2; exit 1; }
   cp -R "$PETDESK_BUNDLED_PETS_DIR" "$stage/bundled-pets"
+else
+  # Replace a previous test distribution's manifest on upgrade without deleting its files.
+  mkdir -p "$stage/bundled-pets"
+  printf '{"version":1,"pets":[]}\n' > "$stage/bundled-pets/manifest.json"
 fi
 
 python3 "$project_dir/scripts/generate-nsis-uninstall.py" "$stage" "$stage_parent/uninstall-files.nsh"
-installer="$output_dir/PetDesk-$version${suffix}-Windows-x64-Setup.exe"
 makensis -V2 -DVERSION="$version" -DSTAGE_DIR="$stage" -DOUTPUT_FILE="$installer" \
-  -DICON_FILE="$project_dir/assets/PetDesk.ico" -DUNINSTALL_INCLUDE="$stage_parent/uninstall-files.nsh" \
+  -DICON_FILE="$icon_dir/PetDesk.ico" -DUNINSTALL_INCLUDE="$stage_parent/uninstall-files.nsh" \
   "$project_dir/packaging/windows-installer.nsi"
 printf 'Installer: %s\nStaged files: %s\n' "$installer" "$stage"

@@ -11,6 +11,11 @@ int main(int argc, char **argv) {
         if (!portrait || portrait.isTemplate || portrait.size.width != 18 || portrait.size.height != 18) {
             qCritical("The bundled status portrait could not be loaded at the intended size"); return 1;
         }
+        QImage custom(32, 32, QImage::Format_ARGB32); custom.fill(Qt::green);
+        NSImage *customImage = PetDeskStatusImage(custom);
+        if (!customImage || customImage.isTemplate || customImage.size.width != 18 || customImage.size.height != 18) {
+            qCritical("The custom status image could not be prepared"); return 1;
+        }
         QAction open(QStringLiteral("打开控制台")), quit(QStringLiteral("退出 PetDesk"));
         QAction pause(QStringLiteral("暂停动画")); pause.setCheckable(true); pause.setChecked(true);
         QSignalSpy opened(&open, &QAction::triggered), exited(&quit, &QAction::triggered);

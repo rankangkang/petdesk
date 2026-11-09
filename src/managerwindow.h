@@ -26,6 +26,7 @@ public:
                     const QString &currentKey, bool petVisible);
     void setCurrentPet(const PetEntry &entry, PetOptions options, bool paused, bool visible);
     void setAppOptions(AppOptions options);
+    void setAppIcon(const QImage &image, bool custom);
     void setScreens(const QStringList &names);
     void setActivity(const QString &text);
     void setNotice(const QString &text, bool error = false);
@@ -50,6 +51,8 @@ signals:
     void activityRequested(int activity);
     void dataFolderRequested();
     void repositoryRequested();
+    void chooseIconRequested();
+    void resetIconRequested();
     void quitRequested();
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -66,12 +69,12 @@ private:
     PetList *m_pets, *m_removed;
     QStackedWidget *m_pages, *m_libraryState, *m_runtimeState;
     QTabWidget *m_libraryTabs;
-    QLabel *m_preview, *m_description, *m_capabilities;
+    QLabel *m_preview, *m_description, *m_capabilities, *m_iconPreview;
     ui::ElidedLabel *m_name, *m_currentName;
     QLabel *m_gazeHint, *m_status, *m_notice, *m_sizeValue;
     QLabel *m_footDot;
     QPushButton *m_import, *m_use, *m_archive, *m_reveal, *m_restore, *m_visibility;
-    QPushButton *m_playAction, *m_playActivity;
+    QPushButton *m_playAction, *m_playActivity, *m_resetIcon;
     QSlider *m_size;
     QComboBox *m_pace, *m_screen, *m_action, *m_activity, *m_closeBehavior;
     QCheckBox *m_gaze, *m_automatic, *m_walk, *m_pause, *m_openConsole, *m_restorePet;
